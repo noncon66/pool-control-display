@@ -5,9 +5,9 @@
 enum class PoolMode : uint8_t
 {
     Off = 0,
-    Auto,
-    Manual,
-    Heating
+    Auto = 1,
+    Manual = 2,
+    Heating = 3
 };
 
 struct PoolState
