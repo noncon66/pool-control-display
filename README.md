@@ -12,9 +12,14 @@ ESP32-S3 based wall touch display for pool control via MQTT, designed to integra
 
 ## Configuration
 
-Copy:
+Create the private device configuration:
 
-src/config.example.h
+```sh
+cp include/PoolConfig.example.h include/PoolConfig.h
+```
+
+Then edit `include/PoolConfig.h` with the Wi-Fi and MQTT settings for the
+device. This file is ignored by Git; only the example file is committed.
 
 ## Planned features
 

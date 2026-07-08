@@ -20,8 +20,8 @@ jobs:
       - name: Install PlatformIO
         run: pip install platformio
 
-      - name: Create dummy config.h
-        run: cp src/config.example.h src/config.h
+      - name: Create dummy PoolConfig.h
+        run: cp include/PoolConfig.example.h include/PoolConfig.h
 
       - name: Build firmware
         run: pio run

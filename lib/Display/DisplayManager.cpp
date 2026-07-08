@@ -30,20 +30,35 @@ bool DisplayManager::begin()
 {
     Serial.println("[Display] begin()");
 
-    initDisplayHardware();
-    initLvgl();
+    if (!initDisplayHardware())
+    {
+        Serial.println("[Display] initialization failed");
+        return false;
+    }
 
+    if (!initLvgl())
+    {
+        Serial.println("[Display] initialization failed");
+        return false;
+    }
+
+    _initialized = true;
     Serial.println("[Display] ready");
     return true;
 }
 
 void DisplayManager::loop()
 {
+    if (!_initialized)
+    {
+        return;
+    }
+
     lv_timer_handler();
     delay(5);
 }
 
-void DisplayManager::initDisplayHardware()
+bool DisplayManager::initDisplayHardware()
 {
     Serial.println("[Display] init hardware");
 
@@ -75,7 +90,7 @@ void DisplayManager::initDisplayHardware()
     if (!gfx->begin())
     {
         Serial.println("[Display] ERROR: gfx->begin() failed");
-        return;
+        return false;
     }
 
     gfx->fillScreen(BLACK);
@@ -83,9 +98,11 @@ void DisplayManager::initDisplayHardware()
     gfx->setCursor(20, 20);
     gfx->println("Pool Control Display");
     gfx->println("Display init OK");
+
+    return true;
 }
 
-void DisplayManager::initLvgl()
+bool DisplayManager::initLvgl()
 {
     Serial.println("[Display] init LVGL");
 
@@ -98,7 +115,17 @@ void DisplayManager::initLvgl()
     if (!buf1 || !buf2)
     {
         Serial.println("[Display] ERROR: LVGL buffer allocation failed");
-        return;
+        if (buf1)
+        {
+            heap_caps_free(buf1);
+            buf1 = nullptr;
+        }
+        if (buf2)
+        {
+            heap_caps_free(buf2);
+            buf2 = nullptr;
+        }
+        return false;
     }
 
     lv_disp_draw_buf_init(&draw_buf, buf1, buf2, buffer_pixels);
@@ -111,6 +138,7 @@ void DisplayManager::initLvgl()
     disp_drv.draw_buf = &draw_buf;
 
     lv_disp_drv_register(&disp_drv);
+    return true;
 }
 
 void DisplayManager::lvglFlushCallback(lv_disp_drv_t* disp, const lv_area_t* area, lv_color_t* color_p)

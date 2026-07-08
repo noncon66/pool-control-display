@@ -1,7 +1,7 @@
 #include "WifiManager.h"
 
 #include <WiFi.h>
-#include "config.h"
+#include "PoolConfig.h"
 
 void WifiManager::begin()
 {

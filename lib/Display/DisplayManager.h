@@ -13,8 +13,10 @@ public:
     uint16_t height() const { return 480; }
 
 private:
-    void initLvgl();
-    void initDisplayHardware();
+    bool _initialized = false;
+
+    bool initLvgl();
+    bool initDisplayHardware();
 
     static void lvglFlushCallback(lv_disp_drv_t* disp, const lv_area_t* area, lv_color_t* color_p);
 };

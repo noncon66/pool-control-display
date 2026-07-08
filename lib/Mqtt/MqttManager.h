@@ -20,9 +20,9 @@ public:
     void publishHeartbeat();
     void publishAvailability(bool online);
 
-    void sendMode(uint8_t mode);
-    void sendTargetTemperature(float value);
-    void sendFilterPump(bool on);
+    bool sendMode(uint8_t mode);
+    bool sendTargetTemperature(float value);
+    bool sendFilterPump(bool on);
 
 private:
     PoolState& _state;
@@ -37,6 +37,7 @@ private:
     void connect();
     void subscribeTopics();
     void handleMessage(char* topic, uint8_t* payload, unsigned int length);
+    bool publishCommand(const char* topic, const char* payload);
 
     static MqttManager* _instance;
     static void mqttCallback(char* topic, byte* payload, unsigned int length);

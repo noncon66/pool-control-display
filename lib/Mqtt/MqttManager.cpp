@@ -3,7 +3,7 @@
 #include <WiFi.h>
 #include "WifiManager.h"
 #include "Topics.h"
-#include "config.h"
+#include "PoolConfig.h"
 
 MqttManager* MqttManager::_instance = nullptr;
 
@@ -65,23 +65,40 @@ void MqttManager::publishAvailability(bool online)
     _client.publish(Topics::Device::Availability, online ? "online" : "offline", true);
 }
 
-void MqttManager::sendMode(uint8_t mode)
+bool MqttManager::sendMode(uint8_t mode)
 {
     char buffer[8];
     snprintf(buffer, sizeof(buffer), "%u", mode);
-    _client.publish(Topics::Command::SetMode, buffer, true);
+    return publishCommand(Topics::Command::SetMode, buffer);
 }
 
-void MqttManager::sendTargetTemperature(float value)
+bool MqttManager::sendTargetTemperature(float value)
 {
     char buffer[16];
     snprintf(buffer, sizeof(buffer), "%.1f", value);
-    _client.publish(Topics::Command::SetTargetTemp, buffer, true);
+    return publishCommand(Topics::Command::SetTargetTemp, buffer);
 }
 
-void MqttManager::sendFilterPump(bool on)
+bool MqttManager::sendFilterPump(bool on)
 {
-    _client.publish(Topics::Command::SetFilterPump, on ? "1" : "0", true);
+    return publishCommand(Topics::Command::SetFilterPump, on ? "1" : "0");
+}
+
+bool MqttManager::publishCommand(const char* topic, const char* payload)
+{
+    if (!_client.connected())
+    {
+        Serial.printf("[MQTT] command dropped while disconnected: %s\n", topic);
+        return false;
+    }
+
+    if (!_client.publish(topic, payload, false))
+    {
+        Serial.printf("[MQTT] command publish failed: %s\n", topic);
+        return false;
+    }
+
+    return true;
 }
 
 void MqttManager::connect()
