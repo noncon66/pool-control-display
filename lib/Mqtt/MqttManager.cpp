@@ -51,7 +51,8 @@ void MqttManager::loop()
 
 bool MqttManager::isConnected() const
 {
-    return _client.connected();
+    // _client.connected() is not a const method on the client, so cast away const-ness here
+    return const_cast<MqttManager*>(this)->_client.connected();
 }
 
 void MqttManager::publishHeartbeat()
