@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
+#include <WiFi.h>
 #include <PubSubClient.h>
 #include "PoolState.h"
 
