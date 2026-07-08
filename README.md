@@ -10,6 +10,12 @@ ESP32-S3 based wall touch display for pool control via MQTT, designed to integra
 - Live display of water temperature, heating state and system status
 - Clean modular architecture with PlatformIO
 
+## Configuration
+
+Copy:
+
+src/config.example.h
+
 ## Planned features
 
 - LVGL-based touch UI
