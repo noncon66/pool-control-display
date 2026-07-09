@@ -71,3 +71,14 @@ When Automatic mode is selected:
 The future LVGL screen reads `PanelViewModel` for control availability,
 warnings, and command progress. It must not duplicate permission rules or
 modify `PoolState` directly.
+
+## Current implementation status
+
+The main-screen widget tree is implemented in `lib/Gui/GuiManager.cpp` using
+LVGL 8.4. It includes status cards, mode buttons, target-temperature controls,
+connection warnings, and MQTT command callbacks.
+
+The GUI is compiled but not started yet. `GuiManager::begin()` may only be
+called after the real display driver has initialized LVGL and registered a
+display. Display flush, touch input, backlight, and panel timing remain
+deliberately disabled until the exact hardware revision is known.

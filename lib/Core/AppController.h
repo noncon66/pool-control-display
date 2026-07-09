@@ -5,6 +5,7 @@
 #include "WifiManager.h"
 #include "MqttManager.h"
 #include "OtaManager.h"
+#include "GuiManager.h"
 #include "SerialDashboard.h"
 
 class AppController
@@ -27,6 +28,7 @@ private:
     WifiManager _wifi;
     MqttManager _mqtt;
     OtaManager _ota;
+    GuiManager _gui;
     SerialDashboard _dashboard;
 
     // Zeitpunkt der letzten vollständigen Dashboard-Ausgabe.

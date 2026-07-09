@@ -29,7 +29,7 @@ to `true` and configure a strong `OTA_PASSWORD` in the private
 
 ## Planned features
 
-- LVGL-based touch UI
+- LVGL-based touch UI (widget structure implemented; hardware activation pending)
 - Wi-Fi + MQTT reconnect handling
 - OTA updates (implemented, disabled by default)
 - Pool dashboard
