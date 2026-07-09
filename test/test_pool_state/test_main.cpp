@@ -4,6 +4,7 @@
 #include "PanelCommandState.h"
 #include "PanelControlPolicy.h"
 #include "PanelViewModel.h"
+#include "MqttPayloadParser.h"
 
 void test_new_state_has_no_confirmed_values()
 {
@@ -73,6 +74,45 @@ void test_manual_mode_must_be_confirmed_for_manual_control()
     TEST_ASSERT_FALSE(state.isManualModeConfirmed());
 }
 
+void test_invalid_float_payload_preserves_last_confirmed_value()
+{
+    float value = 27.5f;
+
+    TEST_ASSERT_FALSE(MqttPayloadParser::parseFloat("not-a-number", value));
+    TEST_ASSERT_EQUAL_FLOAT(27.5f, value);
+
+    TEST_ASSERT_FALSE(MqttPayloadParser::parseFloat("29.0 extra", value));
+    TEST_ASSERT_EQUAL_FLOAT(27.5f, value);
+
+    TEST_ASSERT_FALSE(MqttPayloadParser::parseFloat("nan", value));
+    TEST_ASSERT_EQUAL_FLOAT(27.5f, value);
+}
+
+void test_valid_float_payload_is_applied()
+{
+    float value = 27.5f;
+
+    TEST_ASSERT_TRUE(MqttPayloadParser::parseFloat("29.5", value));
+    TEST_ASSERT_EQUAL_FLOAT(29.5f, value);
+}
+
+void test_mode_payload_requires_exact_supported_value()
+{
+    PoolMode mode = PoolMode::Manual;
+
+    TEST_ASSERT_FALSE(MqttPayloadParser::parseMode("abc", mode));
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(PoolMode::Manual),
+        static_cast<uint8_t>(mode));
+
+    TEST_ASSERT_FALSE(MqttPayloadParser::parseMode("10", mode));
+    TEST_ASSERT_FALSE(MqttPayloadParser::parseMode("3", mode));
+    TEST_ASSERT_TRUE(MqttPayloadParser::parseMode("1", mode));
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(PoolMode::Auto),
+        static_cast<uint8_t>(mode));
+}
+
 void test_command_is_confirmed_only_by_matching_status()
 {
     PanelCommandState commands;
@@ -123,6 +163,9 @@ void test_target_temperature_requires_current_automatic_mode()
     PoolState state;
     state.hasMode = true;
     state.mode = PoolMode::Auto;
+    state.lastModeUpdateAt = 1000;
+    state.hasTargetTemperature = true;
+    state.lastTargetTemperatureUpdateAt = 1000;
     state.lastStatusUpdateAt = 1000;
 
     TEST_ASSERT_TRUE(
@@ -139,11 +182,36 @@ void test_target_temperature_requires_current_automatic_mode()
             1001 + PoolState::STATUS_STALE_AFTER_MS));
 }
 
+void test_other_status_does_not_refresh_operating_mode()
+{
+    PoolState state;
+    state.hasMode = true;
+    state.mode = PoolMode::Manual;
+    state.lastModeUpdateAt = 1000;
+    state.hasFilterPump = true;
+    state.lastFilterPumpUpdateAt =
+        1001 + PoolState::STATUS_STALE_AFTER_MS;
+
+    // Eine neue Temperaturmeldung hält den allgemeinen Datenstrom aktuell,
+    // darf aber den alten Manual-Modus nicht auffrischen.
+    const uint32_t now = 1001 + PoolState::STATUS_STALE_AFTER_MS;
+    state.hasWaterTemperature = true;
+    state.lastStatusUpdateAt = now;
+
+    TEST_ASSERT_TRUE(state.isStatusFresh(now));
+    TEST_ASSERT_FALSE(state.isModeFresh(now));
+    TEST_ASSERT_FALSE(
+        PanelControlPolicy::canControlFilterPump(state, true, now));
+}
+
 void test_view_model_disables_controls_without_connection()
 {
     PoolState state;
     state.hasMode = true;
     state.mode = PoolMode::Auto;
+    state.lastModeUpdateAt = 1000;
+    state.hasTargetTemperature = true;
+    state.lastTargetTemperatureUpdateAt = 1000;
     state.lastStatusUpdateAt = 1000;
     PanelCommandState commands;
 
@@ -161,6 +229,11 @@ void test_view_model_enables_controls_for_confirmed_mode()
     PoolState state;
     state.hasMode = true;
     state.mode = PoolMode::Auto;
+    state.lastModeUpdateAt = 1000;
+    state.hasTargetTemperature = true;
+    state.lastTargetTemperatureUpdateAt = 1000;
+    state.hasFilterPump = true;
+    state.lastFilterPumpUpdateAt = 1000;
     state.lastStatusUpdateAt = 1000;
     PanelCommandState commands;
 
@@ -200,10 +273,14 @@ int main(int argc, char** argv)
     RUN_TEST(test_freshness_handles_millis_wraparound);
     RUN_TEST(test_heating_is_independent_from_operating_mode);
     RUN_TEST(test_manual_mode_must_be_confirmed_for_manual_control);
+    RUN_TEST(test_invalid_float_payload_preserves_last_confirmed_value);
+    RUN_TEST(test_valid_float_payload_is_applied);
+    RUN_TEST(test_mode_payload_requires_exact_supported_value);
     RUN_TEST(test_command_is_confirmed_only_by_matching_status);
     RUN_TEST(test_pending_command_times_out);
     RUN_TEST(test_target_temperature_range_and_step);
     RUN_TEST(test_target_temperature_requires_current_automatic_mode);
+    RUN_TEST(test_other_status_does_not_refresh_operating_mode);
     RUN_TEST(test_view_model_disables_controls_without_connection);
     RUN_TEST(test_view_model_enables_controls_for_confirmed_mode);
     RUN_TEST(test_view_model_exposes_command_progress);

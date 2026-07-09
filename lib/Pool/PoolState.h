@@ -41,9 +41,16 @@ struct PoolState
     bool hasIsHeating = false;
     bool hasMode = false;
 
-    // Zeitpunkt der letzten gültigen Statusmeldung. millis() zählt die
-    // Millisekunden seit dem Start des ESP32.
+    // Zeitpunkt der letzten gültigen Statusmeldung. Dieser gemeinsame
+    // Zeitstempel zeigt, ob Loxone grundsätzlich noch Daten sendet.
     uint32_t lastStatusUpdateAt = 0;
+
+    // Für Werte, von denen eine Bedienfreigabe abhängt, wird zusätzlich ein
+    // eigener Zeitstempel geführt. So kann beispielsweise eine aktuelle
+    // Temperaturmeldung keinen veralteten Manual-Modus künstlich aktuell halten.
+    uint32_t lastTargetTemperatureUpdateAt = 0;
+    uint32_t lastFilterPumpUpdateAt = 0;
+    uint32_t lastModeUpdateAt = 0;
 
     // Diese beiden Werte beschreiben nur die Verbindung des Panels.
     bool wifiConnected = false;
@@ -65,8 +72,25 @@ struct PoolState
     // "Aktuell" bedeutet nicht "sicher", sondern beschreibt nur das Datenalter.
     bool isStatusFresh(uint32_t now) const
     {
-        return hasAnyStatus() &&
-               (now - lastStatusUpdateAt <= STATUS_STALE_AFTER_MS);
+        return isValueFresh(hasAnyStatus(), lastStatusUpdateAt, now);
+    }
+
+    bool isTargetTemperatureFresh(uint32_t now) const
+    {
+        return isValueFresh(
+            hasTargetTemperature,
+            lastTargetTemperatureUpdateAt,
+            now);
+    }
+
+    bool isFilterPumpFresh(uint32_t now) const
+    {
+        return isValueFresh(hasFilterPump, lastFilterPumpUpdateAt, now);
+    }
+
+    bool isModeFresh(uint32_t now) const
+    {
+        return isValueFresh(hasMode, lastModeUpdateAt, now);
     }
 
     // Diese Information dient nur dazu, das Bedienelement im Panel
@@ -74,5 +98,12 @@ struct PoolState
     bool isManualModeConfirmed() const
     {
         return hasMode && mode == PoolMode::Manual;
+    }
+
+private:
+    // Vorzeichenlose Subtraktion behandelt den Überlauf von millis() korrekt.
+    static bool isValueFresh(bool hasValue, uint32_t updatedAt, uint32_t now)
+    {
+        return hasValue && (now - updatedAt <= STATUS_STALE_AFTER_MS);
     }
 };

@@ -78,10 +78,21 @@ void GuiManager::createScreen()
     lv_obj_t** statusValues[] = {&_filterValue, &_heatingPumpValue, &_heatingAllowedValue};
     for (int i = 0; i < 3; ++i)
     {
-        lv_obj_t* card = lv_obj_create(screen);
+        // Nur die Filterpumpenkachel ist bedienbar. Heizpumpe und Heizfreigabe
+        // sind reine Informationen aus Loxone.
+        lv_obj_t* card = i == 0 ? lv_btn_create(screen) : lv_obj_create(screen);
         styleCard(card);
         lv_obj_set_size(card, 145, 76);
         lv_obj_set_pos(card, 12 + i * 155, 154);
+        if (i == 0)
+        {
+            _filterButton = card;
+            lv_obj_add_event_cb(
+                _filterButton,
+                onFilterPumpClicked,
+                LV_EVENT_CLICKED,
+                this);
+        }
         createLabel(card, statusNames[i], lv_color_hex(COLOR_MUTED));
         *statusValues[i] = createLabel(card, "--", lv_color_hex(COLOR_GREEN));
         lv_obj_align(*statusValues[i], LV_ALIGN_BOTTOM_LEFT, 0, 0);
@@ -165,6 +176,7 @@ void GuiManager::applyView(const PanelViewModel& view)
     for (lv_obj_t* button : _modeButtons) setEnabled(button, view.modeControlEnabled);
     setEnabled(_minusButton, view.targetTemperatureControlEnabled);
     setEnabled(_plusButton, view.targetTemperatureControlEnabled);
+    setEnabled(_filterButton, view.filterPumpControlEnabled);
 
     if (view.showOfflineWarning) lv_label_set_text(_footer, "Keine MQTT-Verbindung");
     else if (view.showStaleDataWarning) lv_label_set_text(_footer, "Loxone-Daten veraltet");
@@ -189,4 +201,17 @@ void GuiManager::onTargetClicked(lv_event_t* event)
     const float requested = self->_state->targetTemperature +
         static_cast<float>(direction) * PanelControlPolicy::TARGET_TEMPERATURE_STEP;
     self->_mqtt->sendTargetTemperature(requested);
+}
+
+void GuiManager::onFilterPumpClicked(lv_event_t* event)
+{
+    auto* self = static_cast<GuiManager*>(lv_event_get_user_data(event));
+    if (!self || !self->_mqtt || !self->_state || !self->_state->hasFilterPump)
+    {
+        return;
+    }
+
+    // Das Panel sendet nur den gewünschten neuen Zustand. PoolState wird erst
+    // durch die anschließende Bestätigung von Loxone geändert.
+    self->_mqtt->sendFilterPump(!self->_state->filterPump);
 }

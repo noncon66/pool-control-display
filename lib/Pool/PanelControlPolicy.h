@@ -32,21 +32,22 @@ namespace PanelControlPolicy
 
     inline bool canAdjustTargetTemperature(const PoolState& state, uint32_t now)
     {
-        return state.hasMode &&
-               state.mode == PoolMode::Auto &&
-               state.isStatusFresh(now);
+        return state.mode == PoolMode::Auto &&
+               state.isModeFresh(now) &&
+               state.isTargetTemperatureFresh(now);
     }
 
     inline bool canSelectMode(const PoolState& state, bool mqttConnected, uint32_t now)
     {
-        return mqttConnected && state.hasMode && state.isStatusFresh(now);
+        return mqttConnected && state.isModeFresh(now);
     }
 
     inline bool canControlFilterPump(const PoolState& state, bool mqttConnected, uint32_t now)
     {
         return mqttConnected &&
                state.isManualModeConfirmed() &&
-               state.isStatusFresh(now);
+               state.isModeFresh(now) &&
+               state.isFilterPumpFresh(now);
     }
 
     inline bool canAdjustTargetTemperature(

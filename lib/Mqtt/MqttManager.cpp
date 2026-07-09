@@ -4,20 +4,10 @@
 #include "WifiManager.h"
 #include "Topics.h"
 #include "PoolConfig.h"
+#include "MqttPayloadParser.h"
 
 namespace
 {
-    // String::toFloat() liefert sowohl für "0" als auch für ungültigen Text 0.
-    // strtof() meldet zusätzlich, an welcher Stelle die Auswertung endete.
-    bool parseFloatPayload(const String& value, float& result)
-    {
-        char* end = nullptr;
-        result = strtof(value.c_str(), &end);
-        // Ein gültiger Wert muss eine Zahl enthalten, die gesamte Nachricht
-        // verbrauchen und endlich sein (weder NaN noch unendlich).
-        return end != value.c_str() && *end == '\0' && isfinite(result);
-    }
-
     // Nur ausdrücklich unterstützte boolesche Darstellungen akzeptieren.
     // Ungültiger Text darf nicht unbemerkt zu einem AUS-Status werden.
     bool parseBoolPayload(const String& value, bool& result)
@@ -285,22 +275,27 @@ void MqttManager::handleMessage(char* topic, uint8_t* payload, unsigned int leng
     // aktualisieren. Diese Funktion trifft keine Pool-Steuerungsentscheidung.
     if (strcmp(topic, Topics::Status::WaterTemperature) == 0)
     {
-        if (!parseFloatPayload(value, _state.waterTemperature))
+        float parsedValue = 0.0f;
+        if (!MqttPayloadParser::parseFloat(value.c_str(), parsedValue))
         {
             Serial.printf("[MQTT] invalid water temperature ignored: %s\n", value.c_str());
             return;
         }
+        _state.waterTemperature = parsedValue;
         _state.hasWaterTemperature = true;
     }
     else if (strcmp(topic, Topics::Status::TargetTemperature) == 0)
     {
-        if (!parseFloatPayload(value, _state.targetTemperature))
+        float parsedValue = 0.0f;
+        if (!MqttPayloadParser::parseFloat(value.c_str(), parsedValue))
         {
             Serial.printf("[MQTT] invalid target temperature ignored: %s\n", value.c_str());
             return;
         }
+        _state.targetTemperature = parsedValue;
         _state.hasTargetTemperature = true;
-        _commands.confirmTargetTemperature(_state.targetTemperature, millis());
+        _state.lastTargetTemperatureUpdateAt = millis();
+        _commands.confirmTargetTemperature(parsedValue, millis());
     }
     else if (strcmp(topic, Topics::Status::FilterPump) == 0)
     {
@@ -310,6 +305,7 @@ void MqttManager::handleMessage(char* topic, uint8_t* payload, unsigned int leng
             return;
         }
         _state.hasFilterPump = true;
+        _state.lastFilterPumpUpdateAt = millis();
         _commands.confirmFilterPump(_state.filterPump, millis());
     }
     else if (strcmp(topic, Topics::Status::HeatingPump) == 0)
@@ -341,16 +337,16 @@ void MqttManager::handleMessage(char* topic, uint8_t* payload, unsigned int leng
     }
     else if (strcmp(topic, Topics::Status::Mode) == 0)
     {
-        const int mode = value.toInt();
-        if (mode < static_cast<int>(PoolMode::Off) ||
-            mode > static_cast<int>(PoolMode::Manual))
+        PoolMode parsedMode = PoolMode::Off;
+        if (!MqttPayloadParser::parseMode(value.c_str(), parsedMode))
         {
             Serial.printf("[MQTT] invalid pool mode ignored: %s\n", value.c_str());
             return;
         }
 
-        _state.mode = static_cast<PoolMode>(mode);
+        _state.mode = parsedMode;
         _state.hasMode = true;
+        _state.lastModeUpdateAt = millis();
         _commands.confirmMode(_state.mode, millis());
     }
     else

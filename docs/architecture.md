@@ -16,7 +16,9 @@ The display is deliberately a thin MQTT client:
 - When MQTT is offline, command controls must be disabled.
 
 `PoolState` is a cache of the latest confirmed Loxone status. Its `has...`
-fields distinguish confirmed values from initial storage defaults.
+fields distinguish confirmed values from initial storage defaults. Values that
+influence a control permission have their own update timestamp. A current
+temperature message therefore cannot make an old operating mode appear current.
 
 `PanelCommandState` tracks whether user requests are pending, confirmed, or
 timed out without changing `PoolState`.

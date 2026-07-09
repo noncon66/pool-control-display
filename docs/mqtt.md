@@ -83,6 +83,9 @@ The display never copies the requested value into `PoolState`. A different
 status value means that Loxone did not confirm the request. The future UI can
 show “Wird übernommen …”, a successful confirmation, or a timeout message.
 
+Incoming numeric payloads are parsed strictly. Invalid or only partially
+numeric messages are ignored and never overwrite the last confirmed value.
+
 ## Device topics
 
 | Topic | Payload | Meaning |

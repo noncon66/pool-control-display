@@ -23,6 +23,7 @@ private:
 
     lv_obj_t* _waterValue = nullptr;
     lv_obj_t* _heatingBadge = nullptr;
+    lv_obj_t* _filterButton = nullptr;
     lv_obj_t* _filterValue = nullptr;
     lv_obj_t* _heatingPumpValue = nullptr;
     lv_obj_t* _heatingAllowedValue = nullptr;
@@ -36,4 +37,5 @@ private:
     void applyView(const PanelViewModel& view);
     static void onModeClicked(lv_event_t* event);
     static void onTargetClicked(lv_event_t* event);
+    static void onFilterPumpClicked(lv_event_t* event);
 };
