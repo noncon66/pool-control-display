@@ -4,6 +4,7 @@
 #include "PoolState.h"
 #include "WifiManager.h"
 #include "MqttManager.h"
+#include "OtaManager.h"
 #include "SerialDashboard.h"
 
 class AppController
@@ -25,6 +26,7 @@ private:
     // Jeder Manager kapselt einen klar abgegrenzten Aufgabenbereich.
     WifiManager _wifi;
     MqttManager _mqtt;
+    OtaManager _ota;
     SerialDashboard _dashboard;
 
     // Zeitpunkt der letzten vollständigen Dashboard-Ausgabe.

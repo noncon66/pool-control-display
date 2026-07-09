@@ -21,11 +21,15 @@ cp include/PoolConfig.example.h include/PoolConfig.h
 Then edit `include/PoolConfig.h` with the Wi-Fi and MQTT settings for the
 device. This file is ignored by Git; only the example file is committed.
 
+OTA updates are disabled by default. To enable them later, set `OTA_ENABLED`
+to `true` and configure a strong `OTA_PASSWORD` in the private
+`PoolConfig.h`. OTA refuses to start with an empty password.
+
 ## Planned features
 
 - LVGL-based touch UI
 - Wi-Fi + MQTT reconnect handling
-- OTA updates
+- OTA updates (implemented, disabled by default)
 - Pool dashboard
 - Maintenance screen
 - Settings screen

@@ -21,3 +21,12 @@
 // Gerät
 // -----------------------------------------------------------------------------
 #define DEVICE_NAME     "pool-control-display"
+
+// -----------------------------------------------------------------------------
+// OTA-Firmwareupdate
+// -----------------------------------------------------------------------------
+// Aus Sicherheitsgründen standardmäßig deaktiviert. Vor dem Aktivieren ein
+// langes, eigenes Passwort setzen und PoolConfig.h niemals committen.
+#define OTA_ENABLED     false
+#define OTA_HOSTNAME    DEVICE_NAME
+#define OTA_PASSWORD    ""

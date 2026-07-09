@@ -25,6 +25,10 @@ timed out without changing `PoolState`.
 command progress into simple flags for the future GUI. LVGL widgets should use
 this model instead of implementing their own permission rules.
 
+`OtaManager` handles optional password-protected firmware updates. OTA is
+disabled by default and starts only after Wi-Fi is connected and a non-empty
+password is configured.
+
 ## Hardware separation
 
 Display and touch libraries are disabled in `platformio.ini` until the exact

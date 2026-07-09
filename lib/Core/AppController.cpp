@@ -15,7 +15,9 @@ void AppController::begin()
     Serial.println("Starting application...");
 
     // Zuerst WLAN initialisieren, danach den WLAN-Manager an MQTT übergeben.
+    _wifi.begin();
     _mqtt.begin(_wifi);
+    _ota.begin(_wifi);
 
     _dashboard.begin();
     _dashboard.renderFull(_state, _wifi, _mqtt);
@@ -29,6 +31,7 @@ void AppController::loop()
     // Verbindungen aktiv oder starten bei Bedarf einen neuen Verbindungsversuch.
     _wifi.loop();
     _mqtt.loop();
+    _ota.loop();
 
     // Verbindungszustände übernehmen und nur bei tatsächlichen Änderungen
     // eine Differenzausgabe erzeugen.
