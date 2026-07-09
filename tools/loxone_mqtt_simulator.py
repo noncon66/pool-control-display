@@ -253,7 +253,22 @@ def main() -> int:
     client = MqttClient(args.broker, args.port, args.username, args.password)
     state = PoolSimulation()
 
-    client.connect()
+    try:
+        client.connect()
+    except (TimeoutError, ConnectionRefusedError, socket.gaierror, OSError) as error:
+        print(
+            f"ERROR: MQTT broker {args.broker}:{args.port} is not reachable.",
+            file=sys.stderr,
+        )
+        print(
+            "Check the broker address, port, network connection, firewall, "
+            "and whether the MQTT broker is running.",
+            file=sys.stderr,
+        )
+        print(f"Technical detail: {error}", file=sys.stderr)
+        client.close()
+        return 2
+
     client.subscribe("pool/cmd/#")
     publish_all(client, state)
 

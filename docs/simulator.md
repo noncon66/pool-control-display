@@ -4,6 +4,10 @@ Der Simulator bildet die MQTT-Seite von Loxone für Entwicklungstests nach.
 Benötigt werden lediglich ein erreichbarer MQTT-Broker und entweder Python 3
 oder PowerShell.
 
+> **Wichtig:** `192.168.1.10` ist in allen Beispielen nur ein Platzhalter.
+> Er muss durch die tatsächliche IP-Adresse oder den Hostnamen deines
+> MQTT-Brokers ersetzt werden. Der Simulator startet keinen eigenen Broker.
+
 Beide Varianten:
 
 - veröffentlichen alle Statuswerte als retained MQTT-Nachrichten,
@@ -120,3 +124,18 @@ nicht für umgeleitete Standardeingabe vorgesehen.
 1. Mit `M` den manuellen Modus setzen.
 2. Filterpumpe über das Panel schalten.
 3. Der Simulator bestätigt über `pool/status/filterPump`.
+
+## Verbindungsprobleme
+
+Die Meldung `MQTT broker ... is not reachable` bedeutet, dass keine
+TCP-Verbindung zum Broker aufgebaut werden konnte. Prüfe:
+
+- Ist die angegebene Brokeradresse korrekt?
+- Läuft der MQTT-Broker?
+- Ist der Port korrekt? Ohne TLS ist das meistens `1883`.
+- Befinden sich Computer und Broker im selben erreichbaren Netzwerk?
+- Blockiert eine Firewall die Verbindung?
+- Benötigt der Broker Benutzername und Passwort?
+
+Ein Verbindungs-Timeout entsteht vor der MQTT-Anmeldung. Falsche Zugangsdaten
+führen dagegen zu einer ausdrücklichen Ablehnung durch den Broker.
