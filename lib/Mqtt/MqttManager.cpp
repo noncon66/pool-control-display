@@ -7,13 +7,19 @@
 
 namespace
 {
+    // String::toFloat() liefert sowohl für "0" als auch für ungültigen Text 0.
+    // strtof() meldet zusätzlich, an welcher Stelle die Auswertung endete.
     bool parseFloatPayload(const String& value, float& result)
     {
         char* end = nullptr;
         result = strtof(value.c_str(), &end);
+        // Ein gültiger Wert muss eine Zahl enthalten, die gesamte Nachricht
+        // verbrauchen und endlich sein (weder NaN noch unendlich).
         return end != value.c_str() && *end == '\0' && isfinite(result);
     }
 
+    // Nur ausdrücklich unterstützte boolesche Darstellungen akzeptieren.
+    // Ungültiger Text darf nicht unbemerkt zu einem AUS-Status werden.
     bool parseBoolPayload(const String& value, bool& result)
     {
         if (value == "1" || value == "true")
@@ -35,6 +41,8 @@ MqttManager* MqttManager::_instance = nullptr;
 MqttManager::MqttManager(PoolState& state)
     : _state(state), _client(_wifiClient)
 {
+    // Die Initialisierungsliste speichert die Zustandsreferenz und verbindet
+    // PubSubClient mit seinem WLAN-Transport.
 }
 
 void MqttManager::begin(WifiManager& wifi)
@@ -42,12 +50,15 @@ void MqttManager::begin(WifiManager& wifi)
     _wifi = &wifi;
     _instance = this;
 
+    // Brokeradresse speichern und den statischen Nachrichten-Callback anmelden.
     _client.setServer(MQTT_HOST, MQTT_PORT);
     _client.setCallback(MqttManager::mqttCallback);
 }
 
 void MqttManager::loop()
 {
+    // MQTT funktioniert nicht ohne WLAN. WifiManager kümmert sich selbst um
+    // Neuverbindungen; bis dahin ist hier nichts zu tun.
     if (!_wifi || !_wifi->isConnected())
     {
         return;
@@ -56,6 +67,7 @@ void MqttManager::loop()
     if (!_client.connected())
     {
         const uint32_t now = millis();
+        // Broker-Verbindungsversuche auf einen alle fünf Sekunden begrenzen.
         if (now - _lastReconnectAttempt >= 5000)
         {
             _lastReconnectAttempt = now;
@@ -64,6 +76,8 @@ void MqttManager::loop()
         return;
     }
 
+    // Nachrichten empfangen, Callbacks ausführen und die Verbindung aktiv
+    // halten. PubSubClient benötigt diesen Aufruf regelmäßig.
     _client.loop();
 
     const uint32_t now = millis();
@@ -76,7 +90,8 @@ void MqttManager::loop()
 
 bool MqttManager::isConnected() const
 {
-    // _client.connected() is not a const method on the client, so cast away const-ness here
+    // PubSubClient::connected() ist nicht als const deklariert, obwohl es nur
+    // einen Zustand abfragt. Der Cast ermöglicht hier trotzdem eine const-API.
     return const_cast<MqttManager*>(this)->_client.connected();
 }
 
@@ -111,6 +126,9 @@ bool MqttManager::sendFilterPump(bool on)
 
 bool MqttManager::publishCommand(const char* topic, const char* payload)
 {
+    // Befehle werden lokal nicht zwischengespeichert. Ein Offline-Wunsch wird
+    // verworfen, damit er nicht unerwartet nach einer Neuverbindung ausgeführt
+    // wird.
     if (!_client.connected())
     {
         Serial.printf("[MQTT] command dropped while disconnected: %s\n", topic);
@@ -131,8 +149,12 @@ void MqttManager::connect()
     Serial.printf("[MQTT] connecting to %s:%d\n", MQTT_HOST, MQTT_PORT);
 
     bool ok = false;
+    // Broker-Zugangsdaten nur verwenden, wenn ein Benutzername eingetragen ist.
     if (strlen(MQTT_USERNAME) > 0)
     {
+        // Die letzten Argumente konfigurieren das MQTT Last Will and Testament.
+        // Verschwindet das Panel unerwartet, veröffentlicht der Broker
+        // stellvertretend den gespeicherten Status "offline".
         ok = _client.connect(
             DEVICE_NAME,
             MQTT_USERNAME,
@@ -161,12 +183,16 @@ void MqttManager::connect()
     }
 
     Serial.println("[MQTT] connected");
+    // Eine eventuell gespeicherte "offline"-Meldung ersetzen und anschließend
+    // alle von Loxone veröffentlichten Werte abonnieren.
     publishAvailability(true);
     subscribeTopics();
 }
 
 void MqttManager::subscribeTopics()
 {
+    // Abonnements nach jeder Neuverbindung wiederholen, weil der Client eine
+    // neue, saubere MQTT-Sitzung startet.
     _client.subscribe(Topics::Status::WaterTemperature);
     _client.subscribe(Topics::Status::TargetTemperature);
     _client.subscribe(Topics::Status::FilterPump);
@@ -179,6 +205,8 @@ void MqttManager::subscribeTopics()
 
 void MqttManager::handleMessage(char* topic, uint8_t* payload, unsigned int length)
 {
+    // MQTT-Nutzdaten sind Byte-Arrays und enden nicht garantiert mit '\0'.
+    // Vor der Auswertung deshalb exakt 'length' Bytes in einen String kopieren.
     String value;
     value.reserve(length);
     for (unsigned int i = 0; i < length; ++i)
@@ -188,6 +216,8 @@ void MqttManager::handleMessage(char* topic, uint8_t* payload, unsigned int leng
 
     Serial.printf("[MQTT] %s = %s\n", topic, value.c_str());
 
+    // Thema zuordnen, Nutzdaten prüfen und nur das zugehörige Zustandsfeld
+    // aktualisieren. Diese Funktion trifft keine Pool-Steuerungsentscheidung.
     if (strcmp(topic, Topics::Status::WaterTemperature) == 0)
     {
         if (!parseFloatPayload(value, _state.waterTemperature))
@@ -251,11 +281,13 @@ void MqttManager::handleMessage(char* topic, uint8_t* payload, unsigned int leng
         return;
     }
 
+    // Nur gültige und bekannte Statusmeldungen aktualisieren diesen Zeitstempel.
     _state.lastStatusUpdateAt = millis();
 }
 
 void MqttManager::mqttCallback(char* topic, byte* payload, unsigned int length)
 {
+    // Den statischen PubSubClient-Callback an die aktive Managerinstanz leiten.
     if (_instance)
     {
         _instance->handleMessage(topic, payload, length);

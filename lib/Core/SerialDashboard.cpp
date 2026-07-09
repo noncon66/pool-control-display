@@ -13,6 +13,8 @@ void SerialDashboard::renderFull(const PoolState& state, const WifiManager& wifi
 {
     printHeader("POOL CONTROL DISPLAY");
 
+    // Ein gespeicherter Wert wird erst angezeigt, wenn sein has...-Feld den
+    // Empfang von Loxone bestätigt. So wirken Standardwerte nicht wie Messwerte.
     if (state.hasWaterTemperature) Serial.printf("Water temp      : %.1f C\n", state.waterTemperature);
     else                           Serial.println("Water temp      : UNKNOWN");
     if (state.hasTargetTemperature) Serial.printf("Target temp     : %.1f C\n", state.targetTemperature);
@@ -36,6 +38,8 @@ void SerialDashboard::renderDiff(const PoolState& oldState, const PoolState& new
 {
     printHeader("STATE UPDATE");
 
+    // Wert und Gültigkeitsfeld werden verglichen. Ein erstmals bestätigter Wert
+    // von 0.0 muss ausgegeben werden, obwohl der Speicher mit 0.0 begann.
     if (oldState.waterTemperature != newState.waterTemperature ||
         oldState.hasWaterTemperature != newState.hasWaterTemperature)
     {
@@ -102,6 +106,8 @@ void SerialDashboard::renderDiff(const PoolState& oldState, const PoolState& new
 
 const char* SerialDashboard::modeToString(PoolMode mode) const
 {
+    // Stringliterale bleiben während der gesamten Programmlaufzeit bestehen
+    // und können daher sicher zurückgegeben werden.
     switch (mode)
     {
         case PoolMode::Off:     return "Off";

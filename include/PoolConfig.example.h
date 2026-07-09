@@ -1,5 +1,8 @@
 #pragma once
 
+// Diese Datei nach PoolConfig.h kopieren und die Platzhalter ersetzen.
+// PoolConfig.h wird von Git ignoriert; Zugangsdaten bleiben dadurch lokal.
+
 // -----------------------------------------------------------------------------
 // WiFi
 // -----------------------------------------------------------------------------
@@ -15,6 +18,6 @@
 #define MQTT_PASSWORD   ""
 
 // -----------------------------------------------------------------------------
-// Device
+// Gerät
 // -----------------------------------------------------------------------------
 #define DEVICE_NAME     "pool-control-display"

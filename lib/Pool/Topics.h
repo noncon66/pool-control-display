@@ -2,8 +2,11 @@
 
 namespace Topics
 {
+    // Alle MQTT-Themen stehen an einer zentralen Stelle. Bei Änderungen müssen
+    // sie dadurch nicht im gesamten Programm gesucht und ersetzt werden.
     namespace Status
     {
+        // Statusrichtung: Loxone veröffentlicht, das Panel empfängt.
         constexpr const char* WaterTemperature = "pool/status/waterTemp";
         constexpr const char* TargetTemperature = "pool/status/targetTemp";
         constexpr const char* FilterPump        = "pool/status/filterPump";
@@ -14,6 +17,8 @@ namespace Topics
 
     namespace Command
     {
+        // Befehlsrichtung: Das Panel veröffentlicht einen Bedienwunsch. Loxone
+        // entscheidet über die Ausführung und veröffentlicht den neuen Status.
         constexpr const char* SetMode          = "pool/cmd/mode";
         constexpr const char* SetTargetTemp    = "pool/cmd/targetTemp";
         constexpr const char* SetFilterPump    = "pool/cmd/filterPump";
@@ -21,6 +26,7 @@ namespace Topics
 
     namespace Device
     {
+        // Technischer Zustand des Panels selbst.
         constexpr const char* Availability = "pool/display/status";
         constexpr const char* Heartbeat    = "pool/display/heartbeat";
     }
