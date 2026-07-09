@@ -6,3 +6,6 @@
 .vscode/settings.json
 
 include/PoolConfig.h
+
+__pycache__/
+*.pyc
