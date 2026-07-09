@@ -18,6 +18,13 @@ The display is deliberately a thin MQTT client:
 `PoolState` is a cache of the latest confirmed Loxone status. Its `has...`
 fields distinguish confirmed values from initial storage defaults.
 
+`PanelCommandState` tracks whether user requests are pending, confirmed, or
+timed out without changing `PoolState`.
+
+`PanelViewModel` combines connection state, data freshness, control policy, and
+command progress into simple flags for the future GUI. LVGL widgets should use
+this model instead of implementing their own permission rules.
+
 ## Hardware separation
 
 Display and touch libraries are disabled in `platformio.ini` until the exact

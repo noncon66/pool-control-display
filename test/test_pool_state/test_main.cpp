@@ -3,6 +3,7 @@
 #include "PoolState.h"
 #include "PanelCommandState.h"
 #include "PanelControlPolicy.h"
+#include "PanelViewModel.h"
 
 void test_new_state_has_no_confirmed_values()
 {
@@ -138,6 +139,58 @@ void test_target_temperature_requires_current_automatic_mode()
             1001 + PoolState::STATUS_STALE_AFTER_MS));
 }
 
+void test_view_model_disables_controls_without_connection()
+{
+    PoolState state;
+    state.hasMode = true;
+    state.mode = PoolMode::Auto;
+    state.lastStatusUpdateAt = 1000;
+    PanelCommandState commands;
+
+    const PanelViewModel view =
+        PanelViewModel::create(state, commands, false, 1000);
+
+    TEST_ASSERT_TRUE(view.showOfflineWarning);
+    TEST_ASSERT_FALSE(view.modeControlEnabled);
+    TEST_ASSERT_FALSE(view.targetTemperatureControlEnabled);
+    TEST_ASSERT_FALSE(view.filterPumpControlEnabled);
+}
+
+void test_view_model_enables_controls_for_confirmed_mode()
+{
+    PoolState state;
+    state.hasMode = true;
+    state.mode = PoolMode::Auto;
+    state.lastStatusUpdateAt = 1000;
+    PanelCommandState commands;
+
+    PanelViewModel view =
+        PanelViewModel::create(state, commands, true, 1000);
+    TEST_ASSERT_TRUE(view.modeControlEnabled);
+    TEST_ASSERT_TRUE(view.targetTemperatureControlEnabled);
+    TEST_ASSERT_FALSE(view.filterPumpControlEnabled);
+
+    state.mode = PoolMode::Manual;
+    view = PanelViewModel::create(state, commands, true, 1000);
+    TEST_ASSERT_TRUE(view.modeControlEnabled);
+    TEST_ASSERT_FALSE(view.targetTemperatureControlEnabled);
+    TEST_ASSERT_TRUE(view.filterPumpControlEnabled);
+}
+
+void test_view_model_exposes_command_progress()
+{
+    PoolState state;
+    PanelCommandState commands;
+    commands.markModePending(PoolMode::Auto, 1000);
+
+    const PanelViewModel view =
+        PanelViewModel::create(state, commands, true, 1000);
+
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(CommandProgress::Pending),
+        static_cast<uint8_t>(view.modeCommand));
+}
+
 int main(int argc, char** argv)
 {
     UNITY_BEGIN();
@@ -151,5 +204,8 @@ int main(int argc, char** argv)
     RUN_TEST(test_pending_command_times_out);
     RUN_TEST(test_target_temperature_range_and_step);
     RUN_TEST(test_target_temperature_requires_current_automatic_mode);
+    RUN_TEST(test_view_model_disables_controls_without_connection);
+    RUN_TEST(test_view_model_enables_controls_for_confirmed_mode);
+    RUN_TEST(test_view_model_exposes_command_progress);
     return UNITY_END();
 }

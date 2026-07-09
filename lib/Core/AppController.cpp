@@ -1,4 +1,5 @@
 #include "AppController.h"
+#include "PanelViewModel.h"
 
 AppController::AppController()
     : _mqtt(_state)

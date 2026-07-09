@@ -173,15 +173,18 @@ bool MqttManager::sendFilterPump(bool on)
 
 bool MqttManager::canSendFilterPumpCommand() const
 {
-    return isConnected() &&
-           _state.isManualModeConfirmed() &&
-           _state.isStatusFresh(millis());
+    return PanelControlPolicy::canControlFilterPump(
+        _state,
+        isConnected(),
+        millis());
 }
 
 bool MqttManager::canSendTargetTemperatureCommand(float value) const
 {
-    return isConnected() &&
-           PanelControlPolicy::canAdjustTargetTemperature(_state, millis()) &&
+    return PanelControlPolicy::canAdjustTargetTemperature(
+               _state,
+               isConnected(),
+               millis()) &&
            PanelControlPolicy::isValidTargetTemperature(value);
 }
 
