@@ -57,6 +57,19 @@ This panel-side check is only user-interface guidance. Loxone remains
 authoritative and must independently reject `pool/cmd/filterPump` whenever its
 own current operating mode or safety conditions do not permit manual control.
 
+## Target temperature command
+
+The display offers target-temperature changes only when:
+
+- MQTT is connected.
+- Loxone has confirmed operating mode `1` (Automatic).
+- The received Loxone data is current.
+- The requested value is between `20.0 °C` and `32.0 °C`.
+- The requested value uses a `0.5 °C` step.
+
+These are panel interaction rules. Loxone must independently validate every
+target-temperature command before applying it.
+
 ## Command confirmation
 
 After publishing a command, the display tracks it separately from `PoolState`:

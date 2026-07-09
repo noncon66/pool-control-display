@@ -2,6 +2,7 @@
 
 #include "PoolState.h"
 #include "PanelCommandState.h"
+#include "PanelControlPolicy.h"
 
 void test_new_state_has_no_confirmed_values()
 {
@@ -105,6 +106,38 @@ void test_pending_command_times_out()
         static_cast<uint8_t>(commands.filterPump.progress));
 }
 
+void test_target_temperature_range_and_step()
+{
+    TEST_ASSERT_TRUE(PanelControlPolicy::isValidTargetTemperature(20.0f));
+    TEST_ASSERT_TRUE(PanelControlPolicy::isValidTargetTemperature(26.5f));
+    TEST_ASSERT_TRUE(PanelControlPolicy::isValidTargetTemperature(32.0f));
+
+    TEST_ASSERT_FALSE(PanelControlPolicy::isValidTargetTemperature(19.5f));
+    TEST_ASSERT_FALSE(PanelControlPolicy::isValidTargetTemperature(32.5f));
+    TEST_ASSERT_FALSE(PanelControlPolicy::isValidTargetTemperature(26.2f));
+}
+
+void test_target_temperature_requires_current_automatic_mode()
+{
+    PoolState state;
+    state.hasMode = true;
+    state.mode = PoolMode::Auto;
+    state.lastStatusUpdateAt = 1000;
+
+    TEST_ASSERT_TRUE(
+        PanelControlPolicy::canAdjustTargetTemperature(state, 1000));
+
+    state.mode = PoolMode::Manual;
+    TEST_ASSERT_FALSE(
+        PanelControlPolicy::canAdjustTargetTemperature(state, 1000));
+
+    state.mode = PoolMode::Auto;
+    TEST_ASSERT_FALSE(
+        PanelControlPolicy::canAdjustTargetTemperature(
+            state,
+            1001 + PoolState::STATUS_STALE_AFTER_MS));
+}
+
 int main(int argc, char** argv)
 {
     UNITY_BEGIN();
@@ -116,5 +149,7 @@ int main(int argc, char** argv)
     RUN_TEST(test_manual_mode_must_be_confirmed_for_manual_control);
     RUN_TEST(test_command_is_confirmed_only_by_matching_status);
     RUN_TEST(test_pending_command_times_out);
+    RUN_TEST(test_target_temperature_range_and_step);
+    RUN_TEST(test_target_temperature_requires_current_automatic_mode);
     return UNITY_END();
 }

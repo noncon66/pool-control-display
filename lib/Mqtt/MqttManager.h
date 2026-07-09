@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include "PanelControlPolicy.h"
 #include "PanelCommandState.h"
 #include "PoolState.h"
 
@@ -34,6 +35,7 @@ public:
     // Kann von der späteren GUI verwendet werden, um den Filterpumpen-Schalter
     // nur bei bestätigtem, aktuellem Manual-Modus freizugeben.
     bool canSendFilterPumpCommand() const;
+    bool canSendTargetTemperatureCommand(float value) const;
 
     // Die spätere GUI kann hier ablesen, ob ein Bedienwunsch noch wartet,
     // bestätigt wurde oder in ein Timeout gelaufen ist.

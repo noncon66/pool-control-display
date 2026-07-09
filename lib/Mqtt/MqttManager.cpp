@@ -132,11 +132,11 @@ bool MqttManager::sendMode(uint8_t mode)
 
 bool MqttManager::sendTargetTemperature(float value)
 {
-    // Werte ablehnen, die nicht als echte MQTT-Zahl dargestellt werden können.
-    // Tatsächliche Betriebsgrenzen bleiben Aufgabe von Loxone.
-    if (!isfinite(value))
+    // Das Panel bietet die Änderung nur im bestätigten Automatikmodus und nur
+    // innerhalb der vereinbarten Werte an. Loxone prüft den Wunsch zusätzlich.
+    if (!canSendTargetTemperatureCommand(value))
     {
-        Serial.println("[MQTT] invalid target temperature command rejected");
+        Serial.println("[MQTT] target temperature command rejected: invalid value, mode or connection state");
         return false;
     }
 
@@ -176,6 +176,13 @@ bool MqttManager::canSendFilterPumpCommand() const
     return isConnected() &&
            _state.isManualModeConfirmed() &&
            _state.isStatusFresh(millis());
+}
+
+bool MqttManager::canSendTargetTemperatureCommand(float value) const
+{
+    return isConnected() &&
+           PanelControlPolicy::canAdjustTargetTemperature(_state, millis()) &&
+           PanelControlPolicy::isValidTargetTemperature(value);
 }
 
 bool MqttManager::publishCommand(const char* topic, const char* payload)
