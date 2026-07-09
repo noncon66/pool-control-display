@@ -107,6 +107,15 @@ void MqttManager::publishAvailability(bool online)
 
 bool MqttManager::sendMode(uint8_t mode)
 {
+    // Das ist Protokollprüfung und keine Poollogik: Gültige Betriebsmodi sind
+    // ausschließlich Off, Auto und Manual. Der Heizstatus ist ein separates
+    // boolesches Statusfeld und niemals ein Modusbefehl.
+    if (mode > static_cast<uint8_t>(PoolMode::Manual))
+    {
+        Serial.printf("[MQTT] invalid mode command rejected: %u\n", mode);
+        return false;
+    }
+
     char buffer[8];
     snprintf(buffer, sizeof(buffer), "%u", mode);
     return publishCommand(Topics::Command::SetMode, buffer);
@@ -114,6 +123,14 @@ bool MqttManager::sendMode(uint8_t mode)
 
 bool MqttManager::sendTargetTemperature(float value)
 {
+    // Werte ablehnen, die nicht als echte MQTT-Zahl dargestellt werden können.
+    // Tatsächliche Betriebsgrenzen bleiben Aufgabe von Loxone.
+    if (!isfinite(value))
+    {
+        Serial.println("[MQTT] invalid target temperature command rejected");
+        return false;
+    }
+
     char buffer[16];
     snprintf(buffer, sizeof(buffer), "%.1f", value);
     return publishCommand(Topics::Command::SetTargetTemp, buffer);
@@ -198,6 +215,7 @@ void MqttManager::subscribeTopics()
     _client.subscribe(Topics::Status::FilterPump);
     _client.subscribe(Topics::Status::HeatingPump);
     _client.subscribe(Topics::Status::HeatingAllowed);
+    _client.subscribe(Topics::Status::IsHeating);
     _client.subscribe(Topics::Status::Mode);
 
     Serial.println("[MQTT] subscriptions complete");
@@ -263,11 +281,20 @@ void MqttManager::handleMessage(char* topic, uint8_t* payload, unsigned int leng
         }
         _state.hasHeatingAllowed = true;
     }
+    else if (strcmp(topic, Topics::Status::IsHeating) == 0)
+    {
+        if (!parseBoolPayload(value, _state.isHeating))
+        {
+            Serial.printf("[MQTT] invalid heating status ignored: %s\n", value.c_str());
+            return;
+        }
+        _state.hasIsHeating = true;
+    }
     else if (strcmp(topic, Topics::Status::Mode) == 0)
     {
         const int mode = value.toInt();
         if (mode < static_cast<int>(PoolMode::Off) ||
-            mode > static_cast<int>(PoolMode::Heating))
+            mode > static_cast<int>(PoolMode::Manual))
         {
             Serial.printf("[MQTT] invalid pool mode ignored: %s\n", value.c_str());
             return;

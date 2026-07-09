@@ -12,6 +12,7 @@ namespace Topics
         constexpr const char* FilterPump        = "pool/status/filterPump";
         constexpr const char* HeatingPump       = "pool/status/heatingPump";
         constexpr const char* HeatingAllowed    = "pool/status/heatingAllowed";
+        constexpr const char* IsHeating         = "pool/status/isHeating";
         constexpr const char* Mode              = "pool/status/mode";
     }
 

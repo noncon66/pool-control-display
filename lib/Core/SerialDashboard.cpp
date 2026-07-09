@@ -22,6 +22,7 @@ void SerialDashboard::renderFull(const PoolState& state, const WifiManager& wifi
     Serial.printf("Filter pump     : %s\n", state.hasFilterPump ? (state.filterPump ? "ON" : "OFF") : "UNKNOWN");
     Serial.printf("Heating pump    : %s\n", state.hasHeatingPump ? (state.heatingPump ? "ON" : "OFF") : "UNKNOWN");
     Serial.printf("Heating allowed : %s\n", state.hasHeatingAllowed ? (state.heatingAllowed ? "YES" : "NO") : "UNKNOWN");
+    Serial.printf("Pool heating    : %s\n", state.hasIsHeating ? (state.isHeating ? "YES" : "NO") : "UNKNOWN");
     Serial.printf("Mode            : %s\n", state.hasMode ? modeToString(state.mode) : "UNKNOWN");
 
     Serial.printf("WiFi connected  : %s\n", wifi.isConnected() ? "YES" : "NO");
@@ -31,6 +32,9 @@ void SerialDashboard::renderFull(const PoolState& state, const WifiManager& wifi
     }
 
     Serial.printf("MQTT connected  : %s\n", mqtt.isConnected() ? "YES" : "NO");
+    Serial.printf("Loxone data     : %s\n",
+        !state.hasAnyStatus() ? "UNKNOWN" :
+        (state.isStatusFresh(millis()) ? "CURRENT" : "STALE"));
     Serial.println();
 }
 
@@ -75,6 +79,13 @@ void SerialDashboard::renderDiff(const PoolState& oldState, const PoolState& new
             newState.hasHeatingAllowed ? (newState.heatingAllowed ? "YES" : "NO") : "UNKNOWN");
     }
 
+    if (oldState.isHeating != newState.isHeating ||
+        oldState.hasIsHeating != newState.hasIsHeating)
+    {
+        Serial.printf("Pool heating    : %s\n",
+            newState.hasIsHeating ? (newState.isHeating ? "YES" : "NO") : "UNKNOWN");
+    }
+
     if (oldState.mode != newState.mode ||
         oldState.hasMode != newState.hasMode)
     {
@@ -113,7 +124,6 @@ const char* SerialDashboard::modeToString(PoolMode mode) const
         case PoolMode::Off:     return "Off";
         case PoolMode::Auto:    return "Auto";
         case PoolMode::Manual:  return "Manual";
-        case PoolMode::Heating: return "Heating";
         default:                return "Unknown";
     }
 }
