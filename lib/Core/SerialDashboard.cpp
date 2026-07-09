@@ -13,12 +13,14 @@ void SerialDashboard::renderFull(const PoolState& state, const WifiManager& wifi
 {
     printHeader("POOL CONTROL DISPLAY");
 
-    Serial.printf("Water temp      : %.1f °C\n", state.waterTemperature);
-    Serial.printf("Target temp     : %.1f °C\n", state.targetTemperature);
-    Serial.printf("Filter pump     : %s\n", state.filterPump ? "ON" : "OFF");
-    Serial.printf("Heating pump    : %s\n", state.heatingPump ? "ON" : "OFF");
-    Serial.printf("Heating allowed : %s\n", state.heatingAllowed ? "YES" : "NO");
-    Serial.printf("Mode            : %s\n", modeToString(state.mode));
+    if (state.hasWaterTemperature) Serial.printf("Water temp      : %.1f C\n", state.waterTemperature);
+    else                           Serial.println("Water temp      : UNKNOWN");
+    if (state.hasTargetTemperature) Serial.printf("Target temp     : %.1f C\n", state.targetTemperature);
+    else                            Serial.println("Target temp     : UNKNOWN");
+    Serial.printf("Filter pump     : %s\n", state.hasFilterPump ? (state.filterPump ? "ON" : "OFF") : "UNKNOWN");
+    Serial.printf("Heating pump    : %s\n", state.hasHeatingPump ? (state.heatingPump ? "ON" : "OFF") : "UNKNOWN");
+    Serial.printf("Heating allowed : %s\n", state.hasHeatingAllowed ? (state.heatingAllowed ? "YES" : "NO") : "UNKNOWN");
+    Serial.printf("Mode            : %s\n", state.hasMode ? modeToString(state.mode) : "UNKNOWN");
 
     Serial.printf("WiFi connected  : %s\n", wifi.isConnected() ? "YES" : "NO");
     if (wifi.isConnected())
@@ -34,42 +36,46 @@ void SerialDashboard::renderDiff(const PoolState& oldState, const PoolState& new
 {
     printHeader("STATE UPDATE");
 
-    if (oldState.waterTemperature != newState.waterTemperature)
+    if (oldState.waterTemperature != newState.waterTemperature ||
+        oldState.hasWaterTemperature != newState.hasWaterTemperature)
     {
-        Serial.printf("Water temp      : %.1f -> %.1f °C\n", oldState.waterTemperature, newState.waterTemperature);
+        if (newState.hasWaterTemperature) Serial.printf("Water temp      : %.1f C\n", newState.waterTemperature);
+        else                              Serial.println("Water temp      : UNKNOWN");
     }
 
-    if (oldState.targetTemperature != newState.targetTemperature)
+    if (oldState.targetTemperature != newState.targetTemperature ||
+        oldState.hasTargetTemperature != newState.hasTargetTemperature)
     {
-        Serial.printf("Target temp     : %.1f -> %.1f °C\n", oldState.targetTemperature, newState.targetTemperature);
+        if (newState.hasTargetTemperature) Serial.printf("Target temp     : %.1f C\n", newState.targetTemperature);
+        else                               Serial.println("Target temp     : UNKNOWN");
     }
 
-    if (oldState.filterPump != newState.filterPump)
+    if (oldState.filterPump != newState.filterPump ||
+        oldState.hasFilterPump != newState.hasFilterPump)
     {
-        Serial.printf("Filter pump     : %s -> %s\n",
-            oldState.filterPump ? "ON" : "OFF",
-            newState.filterPump ? "ON" : "OFF");
+        Serial.printf("Filter pump     : %s\n",
+            newState.hasFilterPump ? (newState.filterPump ? "ON" : "OFF") : "UNKNOWN");
     }
 
-    if (oldState.heatingPump != newState.heatingPump)
+    if (oldState.heatingPump != newState.heatingPump ||
+        oldState.hasHeatingPump != newState.hasHeatingPump)
     {
-        Serial.printf("Heating pump    : %s -> %s\n",
-            oldState.heatingPump ? "ON" : "OFF",
-            newState.heatingPump ? "ON" : "OFF");
+        Serial.printf("Heating pump    : %s\n",
+            newState.hasHeatingPump ? (newState.heatingPump ? "ON" : "OFF") : "UNKNOWN");
     }
 
-    if (oldState.heatingAllowed != newState.heatingAllowed)
+    if (oldState.heatingAllowed != newState.heatingAllowed ||
+        oldState.hasHeatingAllowed != newState.hasHeatingAllowed)
     {
-        Serial.printf("Heating allowed : %s -> %s\n",
-            oldState.heatingAllowed ? "YES" : "NO",
-            newState.heatingAllowed ? "YES" : "NO");
+        Serial.printf("Heating allowed : %s\n",
+            newState.hasHeatingAllowed ? (newState.heatingAllowed ? "YES" : "NO") : "UNKNOWN");
     }
 
-    if (oldState.mode != newState.mode)
+    if (oldState.mode != newState.mode ||
+        oldState.hasMode != newState.hasMode)
     {
-        Serial.printf("Mode            : %s -> %s\n",
-            modeToString(oldState.mode),
-            modeToString(newState.mode));
+        Serial.printf("Mode            : %s\n",
+            newState.hasMode ? modeToString(newState.mode) : "UNKNOWN");
     }
 
     if (oldState.wifiConnected != newState.wifiConnected)

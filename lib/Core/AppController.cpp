@@ -63,6 +63,12 @@ bool AppController::hasStateChanged() const
         _state.heatingPump != _lastState.heatingPump ||
         _state.heatingAllowed != _lastState.heatingAllowed ||
         _state.mode != _lastState.mode ||
+        _state.hasWaterTemperature != _lastState.hasWaterTemperature ||
+        _state.hasTargetTemperature != _lastState.hasTargetTemperature ||
+        _state.hasFilterPump != _lastState.hasFilterPump ||
+        _state.hasHeatingPump != _lastState.hasHeatingPump ||
+        _state.hasHeatingAllowed != _lastState.hasHeatingAllowed ||
+        _state.hasMode != _lastState.hasMode ||
         _state.wifiConnected != _lastState.wifiConnected ||
         _state.mqttConnected != _lastState.mqttConnected;
 }
