@@ -39,6 +39,11 @@ to `true` and configure a strong `OTA_PASSWORD` in the private
 
 Target device: ESP32-S3 4" wall touch panel (480x480)
 
+## User interface
+
+The approved Loxone-inspired dashboard concept and interaction rules are
+documented in [`docs/ui.md`](docs/ui.md).
+
 ## Project status
 
 Hardware-independent application core in development:
