@@ -37,4 +37,13 @@ Target device: ESP32-S3 4" wall touch panel (480x480)
 
 ## Project status
 
-Early development / bring-up
+Hardware-independent application core in development:
+
+- Wi-Fi and MQTT reconnect handling
+- validated Loxone status model with unknown/stale data handling
+- command validation and confirmation tracking
+- serial diagnostic dashboard
+- native state-model tests prepared
+
+Display and touch support remain disabled until the exact panel revision,
+controller types and pin mapping are known.

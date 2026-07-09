@@ -1,6 +1,7 @@
 #include <unity.h>
 
 #include "PoolState.h"
+#include "PanelCommandState.h"
 
 void test_new_state_has_no_confirmed_values()
 {
@@ -70,6 +71,40 @@ void test_manual_mode_must_be_confirmed_for_manual_control()
     TEST_ASSERT_FALSE(state.isManualModeConfirmed());
 }
 
+void test_command_is_confirmed_only_by_matching_status()
+{
+    PanelCommandState commands;
+    commands.markModePending(PoolMode::Manual, 1000);
+
+    commands.confirmMode(PoolMode::Auto, 2000);
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(CommandProgress::Pending),
+        static_cast<uint8_t>(commands.mode.progress));
+
+    commands.confirmMode(PoolMode::Manual, 2500);
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(CommandProgress::Confirmed),
+        static_cast<uint8_t>(commands.mode.progress));
+}
+
+void test_pending_command_times_out()
+{
+    PanelCommandState commands;
+    commands.markFilterPumpPending(true, 1000);
+
+    commands.updateTimeouts(
+        1000 + PanelCommandState::CONFIRMATION_TIMEOUT_MS - 1);
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(CommandProgress::Pending),
+        static_cast<uint8_t>(commands.filterPump.progress));
+
+    commands.updateTimeouts(
+        1000 + PanelCommandState::CONFIRMATION_TIMEOUT_MS);
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(CommandProgress::TimedOut),
+        static_cast<uint8_t>(commands.filterPump.progress));
+}
+
 int main(int argc, char** argv)
 {
     UNITY_BEGIN();
@@ -79,5 +114,7 @@ int main(int argc, char** argv)
     RUN_TEST(test_freshness_handles_millis_wraparound);
     RUN_TEST(test_heating_is_independent_from_operating_mode);
     RUN_TEST(test_manual_mode_must_be_confirmed_for_manual_control);
+    RUN_TEST(test_command_is_confirmed_only_by_matching_status);
+    RUN_TEST(test_pending_command_times_out);
     return UNITY_END();
 }

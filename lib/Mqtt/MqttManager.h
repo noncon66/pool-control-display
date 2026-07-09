@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include "PanelCommandState.h"
 #include "PoolState.h"
 
 class WifiManager;
@@ -34,6 +35,10 @@ public:
     // nur bei bestätigtem, aktuellem Manual-Modus freizugeben.
     bool canSendFilterPumpCommand() const;
 
+    // Die spätere GUI kann hier ablesen, ob ein Bedienwunsch noch wartet,
+    // bestätigt wurde oder in ein Timeout gelaufen ist.
+    const PanelCommandState& commandState() const { return _commands; }
+
 private:
     // Referenz auf den gemeinsamen Zustand, keine separate Kopie.
     PoolState& _state;
@@ -44,6 +49,7 @@ private:
     // PubSubClient verwendet WiFiClient als TCP-Transport.
     WiFiClient _wifiClient;
     PubSubClient _client;
+    PanelCommandState _commands;
 
     // Zeitstempel verhindern Neuverbindungen und Heartbeats in jedem loop().
     uint32_t _lastReconnectAttempt = 0;

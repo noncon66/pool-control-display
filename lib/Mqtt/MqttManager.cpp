@@ -57,6 +57,9 @@ void MqttManager::begin(WifiManager& wifi)
 
 void MqttManager::loop()
 {
+    // Timeouts müssen auch dann weiterlaufen, wenn WLAN oder MQTT ausfällt.
+    _commands.updateTimeouts(millis());
+
     // MQTT funktioniert nicht ohne WLAN. WifiManager kümmert sich selbst um
     // Neuverbindungen; bis dahin ist hier nichts zu tun.
     if (!_wifi || !_wifi->isConnected())
@@ -118,7 +121,13 @@ bool MqttManager::sendMode(uint8_t mode)
 
     char buffer[8];
     snprintf(buffer, sizeof(buffer), "%u", mode);
-    return publishCommand(Topics::Command::SetMode, buffer);
+    if (!publishCommand(Topics::Command::SetMode, buffer))
+    {
+        return false;
+    }
+
+    _commands.markModePending(static_cast<PoolMode>(mode), millis());
+    return true;
 }
 
 bool MqttManager::sendTargetTemperature(float value)
@@ -133,7 +142,13 @@ bool MqttManager::sendTargetTemperature(float value)
 
     char buffer[16];
     snprintf(buffer, sizeof(buffer), "%.1f", value);
-    return publishCommand(Topics::Command::SetTargetTemp, buffer);
+    if (!publishCommand(Topics::Command::SetTargetTemp, buffer))
+    {
+        return false;
+    }
+
+    _commands.markTargetTemperaturePending(value, millis());
+    return true;
 }
 
 bool MqttManager::sendFilterPump(bool on)
@@ -147,7 +162,13 @@ bool MqttManager::sendFilterPump(bool on)
         return false;
     }
 
-    return publishCommand(Topics::Command::SetFilterPump, on ? "1" : "0");
+    if (!publishCommand(Topics::Command::SetFilterPump, on ? "1" : "0"))
+    {
+        return false;
+    }
+
+    _commands.markFilterPumpPending(on, millis());
+    return true;
 }
 
 bool MqttManager::canSendFilterPumpCommand() const
@@ -269,6 +290,7 @@ void MqttManager::handleMessage(char* topic, uint8_t* payload, unsigned int leng
             return;
         }
         _state.hasTargetTemperature = true;
+        _commands.confirmTargetTemperature(_state.targetTemperature, millis());
     }
     else if (strcmp(topic, Topics::Status::FilterPump) == 0)
     {
@@ -278,6 +300,7 @@ void MqttManager::handleMessage(char* topic, uint8_t* payload, unsigned int leng
             return;
         }
         _state.hasFilterPump = true;
+        _commands.confirmFilterPump(_state.filterPump, millis());
     }
     else if (strcmp(topic, Topics::Status::HeatingPump) == 0)
     {
@@ -318,6 +341,7 @@ void MqttManager::handleMessage(char* topic, uint8_t* payload, unsigned int leng
 
         _state.mode = static_cast<PoolMode>(mode);
         _state.hasMode = true;
+        _commands.confirmMode(_state.mode, millis());
     }
     else
     {

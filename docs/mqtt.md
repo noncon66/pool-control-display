@@ -57,6 +57,19 @@ This panel-side check is only user-interface guidance. Loxone remains
 authoritative and must independently reject `pool/cmd/filterPump` whenever its
 own current operating mode or safety conditions do not permit manual control.
 
+## Command confirmation
+
+After publishing a command, the display tracks it separately from `PoolState`:
+
+- `Pending`: the command was published and the display is waiting for Loxone.
+- `Confirmed`: Loxone published the requested value on the matching status
+  topic.
+- `TimedOut`: no matching status arrived within five seconds.
+
+The display never copies the requested value into `PoolState`. A different
+status value means that Loxone did not confirm the request. The future UI can
+show “Wird übernommen …”, a successful confirmation, or a timeout message.
+
 ## Device topics
 
 | Topic | Payload | Meaning |
