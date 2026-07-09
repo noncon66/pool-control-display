@@ -68,4 +68,11 @@ struct PoolState
         return hasAnyStatus() &&
                (now - lastStatusUpdateAt <= STATUS_STALE_AFTER_MS);
     }
+
+    // Diese Information dient nur dazu, das Bedienelement im Panel
+    // freizugeben. Loxone muss jeden Filterpumpenbefehl trotzdem selbst prüfen.
+    bool isManualModeConfirmed() const
+    {
+        return hasMode && mode == PoolMode::Manual;
+    }
 };

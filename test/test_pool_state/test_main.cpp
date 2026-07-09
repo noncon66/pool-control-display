@@ -56,6 +56,20 @@ void test_heating_is_independent_from_operating_mode()
     TEST_ASSERT_TRUE(state.hasAnyStatus());
 }
 
+void test_manual_mode_must_be_confirmed_for_manual_control()
+{
+    PoolState state;
+    state.mode = PoolMode::Manual;
+
+    TEST_ASSERT_FALSE(state.isManualModeConfirmed());
+
+    state.hasMode = true;
+    TEST_ASSERT_TRUE(state.isManualModeConfirmed());
+
+    state.mode = PoolMode::Auto;
+    TEST_ASSERT_FALSE(state.isManualModeConfirmed());
+}
+
 int main(int argc, char** argv)
 {
     UNITY_BEGIN();
@@ -64,5 +78,6 @@ int main(int argc, char** argv)
     RUN_TEST(test_status_becomes_stale_after_timeout);
     RUN_TEST(test_freshness_handles_millis_wraparound);
     RUN_TEST(test_heating_is_independent_from_operating_mode);
+    RUN_TEST(test_manual_mode_must_be_confirmed_for_manual_control);
     return UNITY_END();
 }

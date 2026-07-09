@@ -138,7 +138,23 @@ bool MqttManager::sendTargetTemperature(float value)
 
 bool MqttManager::sendFilterPump(bool on)
 {
+    // Das Panel verhindert eine offensichtlich unzulässige Bedienung bereits
+    // in der Oberfläche bzw. beim Senden. Das ersetzt ausdrücklich nicht die
+    // verbindliche Prüfung innerhalb der Loxone-Steuerung.
+    if (!canSendFilterPumpCommand())
+    {
+        Serial.println("[MQTT] filter pump command rejected: Manual mode not confirmed or data stale");
+        return false;
+    }
+
     return publishCommand(Topics::Command::SetFilterPump, on ? "1" : "0");
+}
+
+bool MqttManager::canSendFilterPumpCommand() const
+{
+    return isConnected() &&
+           _state.isManualModeConfirmed() &&
+           _state.isStatusFresh(millis());
 }
 
 bool MqttManager::publishCommand(const char* topic, const char* payload)

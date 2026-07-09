@@ -44,6 +44,19 @@ topic.
 Heating is not an operating mode. Loxone publishes it independently on
 `pool/status/isHeating`; the display only presents that information.
 
+## Filter pump command
+
+The display enables the filter pump control only when all of these conditions
+are true:
+
+- MQTT is connected.
+- Loxone has confirmed operating mode `2` (Manual).
+- The received Loxone data is not stale.
+
+This panel-side check is only user-interface guidance. Loxone remains
+authoritative and must independently reject `pool/cmd/filterPump` whenever its
+own current operating mode or safety conditions do not permit manual control.
+
 ## Device topics
 
 | Topic | Payload | Meaning |
