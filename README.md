@@ -1,5 +1,7 @@
 # Pool Control Display
 
+[![CI](https://github.com/noncon66/pool-control-display/actions/workflows/ci.yml/badge.svg)](https://github.com/noncon66/pool-control-display/actions/workflows/ci.yml)
+
 ESP32-S3 based wall touch display for pool control via MQTT, designed to integrate with Loxone.
 
 ## Goals
@@ -64,3 +66,6 @@ Hardware-independent application core in development:
 
 Display and touch support remain disabled until the exact panel revision,
 controller types and pin mapping are known.
+
+Automatic firmware builds, native tests, and simulator checks run through
+GitHub Actions. See [`docs/ci.md`](docs/ci.md).
