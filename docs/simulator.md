@@ -20,6 +20,41 @@ Beide Varianten:
 Der Simulator ist nur ein Entwicklungswerkzeug. Er ersetzt und verändert keine
 echte Loxone-Konfiguration.
 
+## Lokalen MQTT-Broker auf macOS starten
+
+Für Tests auf einem einzelnen Mac eignet sich Eclipse Mosquitto. Mit Homebrew:
+
+```sh
+brew install mosquitto
+```
+
+Broker anschließend in einem eigenen Terminal starten:
+
+```sh
+mosquitto -v
+```
+
+Der Vordergrundmodus `-v` zeigt alle Verbindungen und Nachrichten und lässt
+sich mit `Ctrl+C` beenden. Für diesen lokalen Test lauscht der Broker auf
+`127.0.0.1:1883`.
+
+In einem zweiten Terminal den Simulator starten:
+
+```sh
+python3 ./tools/loxone_mqtt_simulator.py --broker 127.0.0.1
+```
+
+Optional können alle Poolnachrichten in einem dritten Terminal beobachtet
+werden:
+
+```sh
+mosquitto_sub -h 127.0.0.1 -t 'pool/#' -v
+```
+
+Der lokale Loopback-Test ist nur für Programme auf demselben Mac erreichbar.
+Für einen späteren ESP32-Test muss Mosquitto im lokalen Netzwerk lauschen und
+mit Benutzername, Passwort und passenden Firewallregeln abgesichert werden.
+
 ## Python 3 – empfohlen für macOS
 
 Datei: `tools/loxone_mqtt_simulator.py`
