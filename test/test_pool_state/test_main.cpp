@@ -5,6 +5,7 @@
 #include "PanelControlPolicy.h"
 #include "PanelViewModel.h"
 #include "MqttPayloadParser.h"
+#include "ScreenPowerPolicy.h"
 
 void test_new_state_has_no_confirmed_values()
 {
@@ -264,6 +265,64 @@ void test_view_model_exposes_command_progress()
         static_cast<uint8_t>(view.modeCommand));
 }
 
+void test_screen_power_dims_and_turns_off_after_inactivity()
+{
+    ScreenPowerPolicy screen;
+    screen.begin(1000);
+
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(ScreenPowerLevel::Awake),
+        static_cast<uint8_t>(
+            screen.update(1000 + ScreenPowerPolicy::DIM_AFTER_MS - 1)));
+
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(ScreenPowerLevel::Dimmed),
+        static_cast<uint8_t>(
+            screen.update(1000 + ScreenPowerPolicy::DIM_AFTER_MS)));
+    TEST_ASSERT_EQUAL_UINT8(
+        ScreenPowerPolicy::DIMMED_BRIGHTNESS_PERCENT,
+        screen.brightnessPercent());
+
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(ScreenPowerLevel::Off),
+        static_cast<uint8_t>(
+            screen.update(1000 + ScreenPowerPolicy::OFF_AFTER_MS)));
+    TEST_ASSERT_EQUAL_UINT8(
+        ScreenPowerPolicy::OFF_BRIGHTNESS_PERCENT,
+        screen.brightnessPercent());
+}
+
+void test_wakeup_touch_is_not_forwarded_to_controls()
+{
+    ScreenPowerPolicy screen;
+    screen.begin(1000);
+    screen.update(1000 + ScreenPowerPolicy::DIM_AFTER_MS);
+
+    TEST_ASSERT_FALSE(
+        screen.handleTouch(1000 + ScreenPowerPolicy::DIM_AFTER_MS + 100));
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(ScreenPowerLevel::Awake),
+        static_cast<uint8_t>(screen.level()));
+    TEST_ASSERT_EQUAL_UINT8(
+        ScreenPowerPolicy::AWAKE_BRIGHTNESS_PERCENT,
+        screen.brightnessPercent());
+
+    TEST_ASSERT_TRUE(
+        screen.handleTouch(1000 + ScreenPowerPolicy::DIM_AFTER_MS + 200));
+}
+
+void test_activity_resets_screen_power_timeout()
+{
+    ScreenPowerPolicy screen;
+    screen.begin(1000);
+
+    TEST_ASSERT_TRUE(screen.handleTouch(2000));
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(ScreenPowerLevel::Awake),
+        static_cast<uint8_t>(
+            screen.update(2000 + ScreenPowerPolicy::DIM_AFTER_MS - 1)));
+}
+
 int main(int argc, char** argv)
 {
     UNITY_BEGIN();
@@ -284,5 +343,8 @@ int main(int argc, char** argv)
     RUN_TEST(test_view_model_disables_controls_without_connection);
     RUN_TEST(test_view_model_enables_controls_for_confirmed_mode);
     RUN_TEST(test_view_model_exposes_command_progress);
+    RUN_TEST(test_screen_power_dims_and_turns_off_after_inactivity);
+    RUN_TEST(test_wakeup_touch_is_not_forwarded_to_controls);
+    RUN_TEST(test_activity_resets_screen_power_timeout);
     return UNITY_END();
 }

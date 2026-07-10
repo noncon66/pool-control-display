@@ -51,6 +51,20 @@ Heating is never shown as an operating mode.
   disabled.
 - Offline state disables all command controls.
 
+## Screen power behavior
+
+The wall display should not stay fully lit permanently.
+
+- After 60 seconds without touch input, the backlight is dimmed to a low level.
+- After 5 minutes without touch input, the backlight may be switched off.
+- A touch while dimmed or off wakes the display only and must not trigger a
+  pool command.
+- Once awake, the next touch is handled normally.
+- The screen-power logic is independent from pool control. It changes only
+  display brightness and touch forwarding, never `PoolState`.
+- Critical warnings may wake the screen later, but this should be used
+  sparingly to avoid unwanted light at night.
+
 ## Manual mode variation
 
 When Manual mode is selected:
@@ -71,6 +85,10 @@ When Automatic mode is selected:
 The future LVGL screen reads `PanelViewModel` for control availability,
 warnings, and command progress. It must not duplicate permission rules or
 modify `PoolState` directly.
+
+Backlight and touch wake behavior should use `ScreenPowerPolicy`. Hardware
+drivers translate its brightness percentage to the real backlight PWM or
+enable pin.
 
 ## Current implementation status
 

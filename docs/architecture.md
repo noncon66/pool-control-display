@@ -27,6 +27,11 @@ timed out without changing `PoolState`.
 command progress into simple flags for the future GUI. LVGL widgets should use
 this model instead of implementing their own permission rules.
 
+`ScreenPowerPolicy` tracks the screen power state independently from pool
+status and commands. It decides when the display is awake, dimmed, or off and
+whether a touch should be forwarded to the GUI. A touch from dimmed or off only
+wakes the screen, so an accidental first tap cannot trigger a pool command.
+
 `OtaManager` handles optional password-protected firmware updates. OTA is
 disabled by default and starts only after Wi-Fi is connected and a non-empty
 password is configured.
@@ -34,5 +39,5 @@ password is configured.
 ## Hardware separation
 
 Display and touch libraries are disabled in `platformio.ini` until the exact
-panel revision is known. Wi-Fi, MQTT and state handling can be developed and
-tested independently.
+panel revision is known. Wi-Fi, MQTT, screen-power policy, and state handling
+can be developed and tested independently.
