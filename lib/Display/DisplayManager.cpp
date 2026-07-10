@@ -5,10 +5,11 @@
 // -----------------------------------------------------------------------------
 // IMPORTANT
 // -----------------------------------------------------------------------------
-// This is an initial bring-up configuration for an ESP32-S3 4.0" 480x480 RGB
-// display board. Pin assignments can vary between board revisions.
-// The goal of this commit is to get a first image on screen.
-// If your board uses different RGB pins, we will adjust them in the next step.
+// This is still an experimental bring-up placeholder and is excluded from
+// normal builds. The target panel is now known to be a Waveshare
+// ESP32-S3-Touch-LCD-4B with ST7701 display and GT911 touch. Before enabling
+// this library, replace the generic mapping below with the official Waveshare
+// demo setup and verify it on the delivered device.
 // -----------------------------------------------------------------------------
 
 namespace
@@ -63,10 +64,7 @@ bool DisplayManager::initDisplayHardware()
     Serial.println("[Display] init hardware");
 
     // -------------------------------------------------------------------------
-    // Pin mapping
-    //
-    // This mapping is based on a common ESP32-S3 4.0" 480x480 RGB panel layout.
-    // It may need adjustment for your exact board revision.
+    // Placeholder pin mapping. Do not treat this as the Waveshare 4B mapping.
     // -------------------------------------------------------------------------
 
     // Example timing / RGB pin mapping for ESP32-S3 480x480 RGB boards

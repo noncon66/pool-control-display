@@ -33,7 +33,7 @@
   "frameworks": [
     "arduino"
   ],
-  "name": "Pool Control Display ESP32-S3 (16 MB Flash, 8 MB OPI PSRAM)",
+  "name": "Pool Control Display Waveshare ESP32-S3-Touch-LCD-4B",
   "upload": {
     "flash_size": "16MB",
     "maximum_ram_size": 327680,
@@ -41,6 +41,6 @@
     "require_upload_port": true,
     "speed": 921600
   },
-  "url": "https://github.com/noncon66/pool-control-display",
-  "vendor": "Custom"
+  "url": "https://www.waveshare.com/wiki/ESP32-S3-Touch-LCD-4B",
+  "vendor": "Waveshare"
 }

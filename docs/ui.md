@@ -19,8 +19,8 @@ copying an existing screen or using Loxone branding.
 - Large touch targets with clear separation
 - Flat appearance without gradients or decorative effects
 
-Exact colors and font sizes will be finalized after the real display has been
-identified and visually tested.
+Exact colors and font sizes will be finalized after the Waveshare
+ESP32-S3-Touch-LCD-4B has been visually tested.
 
 ## Main screen
 
@@ -99,4 +99,5 @@ connection warnings, and MQTT command callbacks.
 The GUI is compiled but not started yet. `GuiManager::begin()` may only be
 called after the real display driver has initialized LVGL and registered a
 display. Display flush, touch input, backlight, and panel timing remain
-deliberately disabled until the exact hardware revision is known.
+deliberately disabled until the Waveshare driver setup has been ported and
+tested on the delivered panel.

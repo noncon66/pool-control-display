@@ -38,6 +38,10 @@ password is configured.
 
 ## Hardware separation
 
-Display and touch libraries are disabled in `platformio.ini` until the exact
-panel revision is known. Wi-Fi, MQTT, screen-power policy, and state handling
-can be developed and tested independently.
+The target panel is the Waveshare ESP32-S3-Touch-LCD-4B. Display and touch
+libraries are still disabled in `platformio.ini` until the delivered board has
+been checked against the vendor demo and the ST7701 display, GT911 touch, and
+backlight setup have been verified on real hardware.
+
+Wi-Fi, MQTT, screen-power policy, and state handling can be developed and
+tested independently.

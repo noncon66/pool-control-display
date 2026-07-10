@@ -39,7 +39,8 @@ to `true` and configure a strong `OTA_PASSWORD` in the private
 
 ## Hardware
 
-Target device: ESP32-S3 4" wall touch panel (480x480)
+Target device: Waveshare ESP32-S3-Touch-LCD-4B / ESP32-S3 Smart 86 Box,
+4" wall touch panel, 480x480.
 
 ## User interface
 
@@ -64,8 +65,9 @@ Hardware-independent application core in development:
 - serial diagnostic dashboard
 - native state-model tests prepared
 
-Display and touch support remain disabled until the exact panel revision,
-controller types and pin mapping are known.
+Display and touch support remain disabled until the delivered Waveshare panel
+has been checked against the vendor demo and its ST7701 / GT911 driver setup
+has been ported and tested on real hardware.
 
 Automatic firmware builds, native tests, and simulator checks run through
 GitHub Actions. See [`docs/ci.md`](docs/ci.md).
