@@ -5,6 +5,18 @@
 #include "PoolConfig.h"
 #include "WifiManager.h"
 
+#ifndef OTA_ENABLED
+#define OTA_ENABLED false
+#endif
+
+#ifndef OTA_HOSTNAME
+#define OTA_HOSTNAME DEVICE_NAME
+#endif
+
+#ifndef OTA_PASSWORD
+#define OTA_PASSWORD ""
+#endif
+
 void OtaManager::begin(WifiManager& wifi)
 {
     _wifi = &wifi;
