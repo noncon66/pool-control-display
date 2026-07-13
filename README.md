@@ -55,6 +55,12 @@ A PowerShell alternative is available for Windows and systems with PowerShell
 documented rules. Usage is described in
 [`docs/simulator.md`](docs/simulator.md).
 
+## Loxone integration
+
+The LoxBerry MQTT Gateway setup, virtual Loxone inputs and outputs, command
+validation, retained status publishing, and commissioning checklist are
+documented in [`docs/loxone.md`](docs/loxone.md).
+
 ## Project status
 
 Hardware-independent application core in development:

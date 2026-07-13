@@ -4,6 +4,9 @@ This document is the communication contract between Loxone and the display.
 The display never treats a sent command as confirmed state. It waits until
 Loxone publishes the corresponding status topic.
 
+The implementation through the LoxBerry MQTT Gateway and virtual Loxone inputs
+and outputs is documented in [`loxone.md`](loxone.md).
+
 ## Status topics (published by Loxone / consumed by the display)
 
 | Topic | Payload | Meaning |
