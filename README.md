@@ -49,9 +49,8 @@ documented in [`docs/ui.md`](docs/ui.md).
 
 ## MQTT simulation
 
-The dependency-free Python 3 simulator is recommended for macOS and Linux.
-A PowerShell alternative is available for Windows and systems with PowerShell
-7. Both publish Loxone status values and validate panel commands against the
+The dependency-free Python 3 simulator runs on macOS, Linux, and Windows. It
+publishes Loxone status values and validates panel commands against the
 documented rules. Usage is described in
 [`docs/simulator.md`](docs/simulator.md).
 

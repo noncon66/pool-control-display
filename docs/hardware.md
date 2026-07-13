@@ -51,12 +51,6 @@ core 3.2.0. This
 keeps the hardware experiment isolated until the complete application has been
 validated with the newer core.
 
-Build the isolated smoke test on Windows with:
-
-```powershell
-.\tools\build_display_bringup.ps1
-```
-
 For a common workflow on macOS, Windows, and Linux, use the Python launcher:
 
 ```bash
@@ -77,7 +71,8 @@ To find the device name on macOS, connect the board and run:
 pio device list
 ```
 
-Both scripts use `.pio/bringup-core` as a separate PlatformIO core directory.
+The Python launcher uses `.pio/bringup-core` as a separate PlatformIO core
+directory.
 This prevents the pinned Arduino 3.2.0 packages from replacing the normal
 firmware's Arduino 2.0.17 packages in the user's global PlatformIO cache.
 

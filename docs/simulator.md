@@ -1,14 +1,13 @@
 # Loxone-MQTT-Simulator
 
 Der Simulator bildet die MQTT-Seite von Loxone für Entwicklungstests nach.
-Benötigt werden lediglich ein erreichbarer MQTT-Broker und entweder Python 3
-oder PowerShell.
+Benötigt werden lediglich ein erreichbarer MQTT-Broker und Python 3.
 
 > **Wichtig:** `192.168.1.10` ist in allen Beispielen nur ein Platzhalter.
 > Er muss durch die tatsächliche IP-Adresse oder den Hostnamen deines
 > MQTT-Brokers ersetzt werden. Der Simulator startet keinen eigenen Broker.
 
-Beide Varianten:
+Der Simulator:
 
 - veröffentlichen alle Statuswerte als retained MQTT-Nachrichten,
 - abonnieren alle Panelbefehle unter `pool/cmd/#`,
@@ -55,7 +54,7 @@ Der lokale Loopback-Test ist nur für Programme auf demselben Mac erreichbar.
 Für einen späteren ESP32-Test muss Mosquitto im lokalen Netzwerk lauschen und
 mit Benutzername, Passwort und passenden Firewallregeln abgesichert werden.
 
-## Python 3 – empfohlen für macOS
+## Python 3
 
 Datei: `tools/loxone_mqtt_simulator.py`
 
@@ -82,34 +81,6 @@ python3 ./tools/loxone_mqtt_simulator.py \
   --broker 192.168.1.10 \
   --username mqtt-user \
   --password mqtt-password
-```
-
-## PowerShell-Alternative
-
-Datei: `tools/loxone_mqtt_simulator.ps1`
-
-Windows enthält Windows PowerShell. Unter macOS muss PowerShell 7 (`pwsh`)
-separat installiert sein.
-
-### Start unter Windows
-
-```powershell
-.\tools\loxone_mqtt_simulator.ps1 -Broker 192.168.1.10
-```
-
-### Start unter macOS
-
-```sh
-pwsh ./tools/loxone_mqtt_simulator.ps1 -Broker 192.168.1.10
-```
-
-### Mit MQTT-Zugangsdaten
-
-```powershell
-.\tools\loxone_mqtt_simulator.ps1 `
-  -Broker 192.168.1.10 `
-  -Username mqtt-user `
-  -Password mqtt-password
 ```
 
 Zugangsdaten gelten nur für den laufenden Prozess. Echte Zugangsdaten dürfen
