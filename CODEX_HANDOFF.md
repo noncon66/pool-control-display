@@ -2,78 +2,118 @@
 
 ## Aktuelles Ziel
 
-Das ESP32-S3-Pooldisplay als dünnen MQTT-Client für Loxone/LoxBerry
-fertigstellen. Der hardwareunabhängige Kern und die Integrationsdokumentation
-sind vorhanden; als nächster technischer Meilenstein steht die Inbetriebnahme
-von Display und Touch auf dem realen Waveshare-Panel an.
+Das ESP32-S3-Pooldisplay als dünnen MQTT-Client für eine über LoxBerry
+angebundene Loxone-Poolsteuerung fertigstellen. Der hardwareunabhängige Kern,
+der MQTT-Vertrag und die LoxBerry-Integrationsdokumentation sind vorhanden. Bis
+zur Lieferung des Waveshare-Panels können Broker-/Loxone-Vertrag und
+Desktop-nahe Logik weiter geprüft werden; Display und Touch benötigen reale
+Hardware.
 
 ## Aktueller Git-Stand
 
-- Branch `main`, `HEAD` `678ffd9` (`docs: document LoxBerry MQTT integration`),
+- Branch `main`, `HEAD` `7d2d492` (`chore: remove obsolete PowerShell tools`),
   identisch mit `origin/main`.
-- Kein Diff an versionierten Dateien und keine Änderungen im Index.
-- Unversioniert: `AGENTS.md` und `CODEX_HANDOFF.md`. Es wurde nichts committet.
+- `AGENTS.md` und `CODEX_HANDOFF.md` sind versioniert.
+- Vor dieser Aktualisierung war der Arbeitsbaum sauber.
+- Aktueller ungestagter Diff: ausschließlich diese Aktualisierung von
+  `CODEX_HANDOFF.md`. Im Index liegen keine Änderungen.
+- Es wurde in dieser Sitzung nichts committet.
 
-## Bereits erledigte Änderungen
+## Bereits erledigt
 
-- Der versionierte Stand enthält Wi-Fi-/MQTT-Reconnect, ein validiertes
-  Statusmodell, Befehlsbestätigung und -timeouts, Screen-Power-Policy,
-  serielles Diagnose-Dashboard sowie optionales, standardmäßig deaktiviertes
-  OTA.
-- `PoolStatusUpdater` trennt die nativ testbare Statuslogik von Arduino,
-  Netzwerk und Broker; Tests decken MQTT-Randfälle und Broker-Integration ab.
-- Dashboard-Konzept, Architektur, MQTT-Vertrag, Simulator, CI und
-  LoxBerry-/Loxone-Anbindung sind dokumentiert.
-- Uncommittet wurden `CODEX_HANDOFF.md` angelegt und der verbindliche
-  Übergabeprozess in `AGENTS.md` definiert.
+- Wi-Fi-/MQTT-Reconnect, validiertes Statusmodell, strikte Payload-Auswertung,
+  Befehlsbestätigung und -timeouts, Screen-Power-Policy, serielles
+  Diagnose-Dashboard sowie optionales, standardmäßig deaktiviertes OTA sind
+  implementiert.
+- `PoolStatusUpdater` trennt Topic-/Payload-Verarbeitung von Arduino, Netzwerk
+  und Broker. Die native Testsuite enthält 31 registrierte Unity-Tests für
+  Status, Frische, Berechtigungen, Befehle und relevante Randfälle.
+- Der Python-MQTT-Simulator besitzt einen nichtinteraktiven Broker-Selbsttest.
+  CI baut die Firmware, führt die nativen Tests aus und prüft Status-, Befehls-
+  und Retain-Vertrag gegen einen isolierten Mosquitto-Broker.
+- Die Broker-Synchronisation des Selbsttests verwendet PINGREQ/PINGRESP, damit
+  retained QoS-0-Publishes vor dem Prüfabonnement verarbeitet sind.
+- Die reale Integration ist als LoxBerry MQTT Gateway dokumentiert:
+  `pool/cmd/#` gelangt über HTTP Virtual Inputs zu Loxone; bestätigte Zustände
+  werden von Loxone über UDP `11884` mit `retain` an LoxBerry veröffentlicht.
+  Die native MQTT-Integration des Miniservers wird nicht verwendet.
+- Dashboard-Konzept, Architektur, MQTT-Vertrag, Simulator, CI,
+  Hardware-Bring-up und LoxBerry-Anbindung sind dokumentiert.
+- Die redundanten PowerShell-Werkzeuge wurden entfernt. `display_bringup.py`
+  und `loxone_mqtt_simulator.py` sind die einzigen gepflegten Tool-Frontends.
 
 ## Offene Arbeit
 
-- Die beiden unversionierten Übergabedateien prüfen und erst nach ausdrücklicher
-  Freigabe versionieren.
-- Das Waveshare-Panel mit dem isolierten Bring-up gegen den Hersteller-Demoaufbau
-  prüfen.
-- ST7701-Display, GT911-Touch und Backlight in die normale Firmware portieren
-  und auf echter Hardware testen.
-- Anschließend LVGL aktivieren und die noch ausstehenden Dashboard-, Wartungs-
-  und Einstellungsansichten vervollständigen.
+- Die dokumentierte LoxBerry-/Loxone-Zuordnung an der realen Installation
+  einrichten und prüfen: drei virtuelle Befehlseingänge, UDP-Ausgang auf Port
+  `11884`, sieben retained Statustopics und zyklische Aktualisierung spätestens
+  alle 30 Sekunden.
+- Optional einen standardmäßig passiven LoxBerry-Vertragstest ergänzen, der
+  retained Topics, Payloadformate und Aktualisierungsintervalle gegen den
+  realen Broker prüft. Reale Befehle dürfen nur nach expliziter Freigabe
+  gesendet werden.
+- Das gelieferte Waveshare-Panel mit dem isolierten Python-Bring-up gegen den
+  Hersteller-Demoaufbau prüfen.
+- Danach ST7701-Display, GT911-Touch und Backlight in die normale Firmware
+  portieren, `ScreenPowerPolicy` anbinden und auf echter Hardware testen.
+- Anschließend LVGL aktivieren und Wartungs-/Einstellungsansichten ergänzen.
 
 ## Wichtige technische Entscheidungen
 
-- Loxone bleibt alleiniger Controller; das Panel zeigt bestätigte
-  MQTT-Statuswerte und sendet nur Benutzeranforderungen.
-- Keine optimistischen UI-Updates: Befehle gelten erst nach passender
-  Statusmeldung als bestätigt. Fehlende oder alte Werte bleiben unbekannt bzw.
-  stale; offline sind Bedienelemente deaktiviert.
-- Hardwareunabhängige Poollogik bleibt vom Hardware- und Netzwerkcode getrennt
+- Loxone bleibt alleiniger Controller. Das Panel zeigt nur bestätigte
+  MQTT-Statuswerte und veröffentlicht Benutzeranforderungen.
+- Keine optimistischen UI-Updates: Ein Befehl gilt erst nach einer passenden
+  Loxone-Statusmeldung als bestätigt. Unbekannte, stale oder offline Daten
+  deaktivieren die betroffenen Bedienelemente.
+- Die Kommunikation läuft über Mosquitto und das MQTT Gateway auf LoxBerry,
+  nicht über das native MQTT-Plugin des Miniservers.
+- Statusmeldungen sind retained; Befehlstopics sind nicht retained. Für
+  Bedienfreigaben relevante Werte müssen regelmäßig aktualisiert werden.
+- Hardwareunabhängige Poollogik bleibt von Hardware- und Netzwerkcode getrennt
   und wird im nativen PlatformIO-Ziel getestet.
-- Display-Support bleibt im Standard-Build deaktiviert, bis ST7701 und GT911 auf
-  echter Hardware verifiziert sind; dafür existiert ein separates Bring-up-Ziel.
+- Display-Support bleibt im Standard-Build deaktiviert, bis ST7701 und GT911
+  auf echter Hardware verifiziert sind. Dafür existiert das isolierte Ziel
+  `esp32-s3-display-bringup`.
 - Private Gerätewerte liegen nur in der ignorierten Datei
   `include/PoolConfig.h`; OTA ist standardmäßig deaktiviert.
-- `CODEX_HANDOFF.md` ist vor jeder Sitzung zu lesen und am Sitzungsende gemäß
-  `AGENTS.md` zu aktualisieren.
+- Python ist die alleinige Implementierung für Simulator und Display-Bring-up;
+  keine parallelen PowerShell-Versionen pflegen.
+- `CODEX_HANDOFF.md` ist gemäß `AGENTS.md` vor jeder Sitzung zu lesen und am
+  Sitzungsende kompakt auf den tatsächlichen Stand zu aktualisieren.
 
 ## Relevante Dateien
 
 - `AGENTS.md`, `CODEX_HANDOFF.md` – verbindlicher Übergabeprozess und aktueller
   Arbeitsstand
 - `README.md`, `docs/architecture.md` – Projektstatus und Architektur
+- `docs/mqtt.md`, `docs/loxone.md`, `docs/simulator.md` – MQTT-Vertrag,
+  LoxBerry-Umsetzung und Simulator
+- `docs/hardware.md`, `docs/ui.md` – Hardware- und UI-Konzept
 - `platformio.ini` – Firmware-, Native-Test- und Display-Bring-up-Ziele
-- `docs/ui.md`, `docs/mqtt.md`, `docs/loxone.md` – UI- und Integrationsvertrag
-- `lib/Pool/`, `lib/Mqtt/MqttManager.*` – Zustandslogik und MQTT-Anbindung
+- `lib/Pool/PoolStatusUpdater.h`, `lib/Pool/PoolState.h` – nativ testbare
+  Statusverarbeitung
+- `lib/Mqtt/MqttManager.*` – MQTT-Transport, Befehle und Reconnect
+- `tools/loxone_mqtt_simulator.py`, `tools/display_bringup.py` – gepflegte
+  Python-Werkzeuge
 - `src/main.cpp`, `src/display_bringup.cpp` – Firmware und Hardware-Smoke-Test
-- `test/test_pool_state/test_main.cpp` – native Tests
+- `test/test_pool_state/test_main.cpp` – 31 native Unity-Tests
+- `.github/workflows/ci.yml`, `.github/mosquitto-ci.conf` – automatischer Build,
+  native Tests und MQTT-Broker-Integration
 
-## Ausgeführte Tests
+## Tatsächlich ausgeführte Prüfungen
 
-- Git-Status sowie Tracking- und Staging-Diff geprüft: keine Änderungen an
-  versionierten oder gestagten Dateien; nur zwei unversionierte Dateien.
-- `git diff --no-index --check` für `CODEX_HANDOFF.md`: bestanden.
-- Firmware-, Native- und MQTT-Integrationstests wurden nicht ausgeführt, da
-  ausschließlich die Übergabedokumentation aktualisiert wird.
+- Git-Status, Commit-Historie, Tracking-Diff und Staging-Diff geprüft. Vor der
+  Handoff-Aktualisierung war `main` sauber und identisch mit `origin/main`.
+- Vor dem Commit `7d2d492` wurden beide verbleibenden Python-Werkzeuge mit
+  `py_compile` geprüft und ihre `--help`-Aufrufe erfolgreich ausgeführt;
+  verwaiste `.ps1`-/PowerShell-Skriptverweise wurden gesucht.
+- Der Benutzer meldete den GitHub-Actions-Lauf nach dem MQTT-
+  Synchronisationsfix als erfolgreich. Für den aktuellen Handoff-Stand wurde
+  in dieser Sitzung kein neuer Firmware-, Native- oder Broker-Test gestartet.
 
 ## Nächster konkreter Schritt
 
-`AGENTS.md` und `CODEX_HANDOFF.md` inhaltlich prüfen und sie erst in einer
-später ausdrücklich freigegebenen Aktion gemeinsam versionieren.
+Einen passiven LoxBerry-Vertragstest entwerfen und implementieren, der sich mit
+dem realen Mosquitto-Broker verbindet, ohne Befehle zu senden, und die sieben
+retained Statustopics, Payloadformate sowie das 30-Sekunden-Aktualisierungsziel
+prüft. Zugangsdaten bleiben ausschließlich lokal und werden nicht versioniert.
