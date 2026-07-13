@@ -42,6 +42,7 @@ public:
     // Nach fünf Sekunden ohne passende Loxone-Statusmeldung gilt ein Wunsch
     // als nicht bestätigt. Loxone könnte ihn dennoch bewusst abgelehnt haben.
     static constexpr uint32_t CONFIRMATION_TIMEOUT_MS = 5000;
+    static constexpr uint32_t RESULT_VISIBLE_MS = 3000;
 
     ModeCommandState mode;
     TargetTemperatureCommandState targetTemperature;
@@ -102,18 +103,25 @@ public:
 
     void updateTimeouts(uint32_t now)
     {
-        updateTimeout(mode.progress, mode.changedAt, now);
-        updateTimeout(targetTemperature.progress, targetTemperature.changedAt, now);
-        updateTimeout(filterPump.progress, filterPump.changedAt, now);
+        updateProgress(mode.progress, mode.changedAt, now);
+        updateProgress(targetTemperature.progress, targetTemperature.changedAt, now);
+        updateProgress(filterPump.progress, filterPump.changedAt, now);
     }
 
 private:
-    static void updateTimeout(CommandProgress& progress, uint32_t& changedAt, uint32_t now)
+    static void updateProgress(CommandProgress& progress, uint32_t& changedAt, uint32_t now)
     {
         if (progress == CommandProgress::Pending &&
             now - changedAt >= CONFIRMATION_TIMEOUT_MS)
         {
             progress = CommandProgress::TimedOut;
+            changedAt = now;
+        }
+        else if ((progress == CommandProgress::Confirmed ||
+                  progress == CommandProgress::TimedOut) &&
+                 now - changedAt >= RESULT_VISIBLE_MS)
+        {
+            progress = CommandProgress::Idle;
             changedAt = now;
         }
     }

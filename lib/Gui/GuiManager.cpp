@@ -178,8 +178,24 @@ void GuiManager::applyView(const PanelViewModel& view)
     setEnabled(_plusButton, view.targetTemperatureControlEnabled);
     setEnabled(_filterButton, view.filterPumpControlEnabled);
 
+    const bool commandTimedOut =
+        view.modeCommand == CommandProgress::TimedOut ||
+        view.targetTemperatureCommand == CommandProgress::TimedOut ||
+        view.filterPumpCommand == CommandProgress::TimedOut;
+    const bool commandPending =
+        view.modeCommand == CommandProgress::Pending ||
+        view.targetTemperatureCommand == CommandProgress::Pending ||
+        view.filterPumpCommand == CommandProgress::Pending;
+    const bool commandConfirmed =
+        view.modeCommand == CommandProgress::Confirmed ||
+        view.targetTemperatureCommand == CommandProgress::Confirmed ||
+        view.filterPumpCommand == CommandProgress::Confirmed;
+
     if (view.showOfflineWarning) lv_label_set_text(_footer, "Keine MQTT-Verbindung");
     else if (view.showStaleDataWarning) lv_label_set_text(_footer, "Loxone-Daten veraltet");
+    else if (commandTimedOut) lv_label_set_text(_footer, "Keine Bestätigung von Loxone");
+    else if (commandPending) lv_label_set_text(_footer, "Wird übernommen ...");
+    else if (commandConfirmed) lv_label_set_text(_footer, "Übernommen");
     else lv_label_set_text(_footer, "Mit Loxone verbunden");
 }
 

@@ -38,17 +38,20 @@ struct PanelViewModel
         view.showStaleDataWarning = view.hasData && !view.dataIsCurrent;
 
         view.modeControlEnabled =
-            PanelControlPolicy::canSelectMode(state, mqttConnected, now);
+            PanelControlPolicy::canSelectMode(state, mqttConnected, now) &&
+            commands.mode.progress != CommandProgress::Pending;
         view.targetTemperatureControlEnabled =
             PanelControlPolicy::canAdjustTargetTemperature(
                 state,
                 mqttConnected,
-                now);
+                now) &&
+            commands.targetTemperature.progress != CommandProgress::Pending;
         view.filterPumpControlEnabled =
             PanelControlPolicy::canControlFilterPump(
                 state,
                 mqttConnected,
-                now);
+                now) &&
+            commands.filterPump.progress != CommandProgress::Pending;
 
         view.modeCommand = commands.mode.progress;
         view.targetTemperatureCommand = commands.targetTemperature.progress;

@@ -109,6 +109,12 @@ bool MqttManager::sendMode(uint8_t mode)
         return false;
     }
 
+    if (!canSendModeCommand())
+    {
+        Serial.println("[MQTT] mode command rejected: connection unavailable or mode data stale");
+        return false;
+    }
+
     char buffer[8];
     snprintf(buffer, sizeof(buffer), "%u", mode);
     if (!publishCommand(Topics::Command::SetMode, buffer))
@@ -118,6 +124,14 @@ bool MqttManager::sendMode(uint8_t mode)
 
     _commands.markModePending(static_cast<PoolMode>(mode), millis());
     return true;
+}
+
+bool MqttManager::canSendModeCommand() const
+{
+    return PanelControlPolicy::canSelectMode(
+        _state,
+        isConnected(),
+        millis());
 }
 
 bool MqttManager::sendTargetTemperature(float value)

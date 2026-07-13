@@ -148,6 +148,25 @@ void test_pending_command_times_out()
         static_cast<uint8_t>(commands.filterPump.progress));
 }
 
+void test_command_result_returns_to_idle_after_visible_period()
+{
+    PanelCommandState commands;
+    commands.markModePending(PoolMode::Auto, 1000);
+    commands.confirmMode(PoolMode::Auto, 2000);
+
+    commands.updateTimeouts(
+        2000 + PanelCommandState::RESULT_VISIBLE_MS - 1);
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(CommandProgress::Confirmed),
+        static_cast<uint8_t>(commands.mode.progress));
+
+    commands.updateTimeouts(
+        2000 + PanelCommandState::RESULT_VISIBLE_MS);
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(CommandProgress::Idle),
+        static_cast<uint8_t>(commands.mode.progress));
+}
+
 void test_target_temperature_range_and_step()
 {
     TEST_ASSERT_TRUE(PanelControlPolicy::isValidTargetTemperature(20.0f));
@@ -203,6 +222,22 @@ void test_other_status_does_not_refresh_operating_mode()
     TEST_ASSERT_FALSE(state.isModeFresh(now));
     TEST_ASSERT_FALSE(
         PanelControlPolicy::canControlFilterPump(state, true, now));
+}
+
+void test_mode_selection_requires_connection_and_current_mode()
+{
+    PoolState state;
+    state.hasMode = true;
+    state.mode = PoolMode::Off;
+    state.lastModeUpdateAt = 1000;
+
+    TEST_ASSERT_TRUE(PanelControlPolicy::canSelectMode(state, true, 1000));
+    TEST_ASSERT_FALSE(PanelControlPolicy::canSelectMode(state, false, 1000));
+    TEST_ASSERT_FALSE(
+        PanelControlPolicy::canSelectMode(
+            state,
+            true,
+            1001 + PoolState::STATUS_STALE_AFTER_MS));
 }
 
 void test_view_model_disables_controls_without_connection()
@@ -263,6 +298,7 @@ void test_view_model_exposes_command_progress()
     TEST_ASSERT_EQUAL_UINT8(
         static_cast<uint8_t>(CommandProgress::Pending),
         static_cast<uint8_t>(view.modeCommand));
+    TEST_ASSERT_FALSE(view.modeControlEnabled);
 }
 
 void test_screen_power_dims_and_turns_off_after_inactivity()
@@ -337,9 +373,11 @@ int main(int argc, char** argv)
     RUN_TEST(test_mode_payload_requires_exact_supported_value);
     RUN_TEST(test_command_is_confirmed_only_by_matching_status);
     RUN_TEST(test_pending_command_times_out);
+    RUN_TEST(test_command_result_returns_to_idle_after_visible_period);
     RUN_TEST(test_target_temperature_range_and_step);
     RUN_TEST(test_target_temperature_requires_current_automatic_mode);
     RUN_TEST(test_other_status_does_not_refresh_operating_mode);
+    RUN_TEST(test_mode_selection_requires_connection_and_current_mode);
     RUN_TEST(test_view_model_disables_controls_without_connection);
     RUN_TEST(test_view_model_enables_controls_for_confirmed_mode);
     RUN_TEST(test_view_model_exposes_command_progress);

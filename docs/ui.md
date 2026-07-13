@@ -44,8 +44,9 @@ Heating is never shown as an operating mode.
 - Filter pump control is enabled only in Manual mode.
 - All commands remain pending until Loxone confirms the requested status.
 - Pending commands show `Wird übernommen ...`.
-- Confirmed commands may briefly show `Übernommen`.
+- Confirmed commands show `Übernommen` for three seconds.
 - A timeout shows `Keine Bestätigung von Loxone`.
+- The affected control remains disabled while its command is pending.
 - Unknown values display `--` instead of defaults.
 - Stale values remain visible but are marked as outdated and controls are
   disabled.
@@ -94,7 +95,7 @@ enable pin.
 
 The main-screen widget tree is implemented in `lib/Gui/GuiManager.cpp` using
 LVGL 8.4. It includes status cards, mode buttons, target-temperature controls,
-connection warnings, and MQTT command callbacks.
+connection warnings, MQTT command callbacks, and command-progress feedback.
 
 The GUI is compiled but not started yet. `GuiManager::begin()` may only be
 called after the real display driver has initialized LVGL and registered a

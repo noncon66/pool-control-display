@@ -80,8 +80,9 @@ After publishing a command, the display tracks it separately from `PoolState`:
 - `TimedOut`: no matching status arrived within five seconds.
 
 The display never copies the requested value into `PoolState`. A different
-status value means that Loxone did not confirm the request. The future UI can
-show “Wird übernommen …”, a successful confirmation, or a timeout message.
+status value means that Loxone did not confirm the request. The UI shows
+“Wird übernommen …”, a successful confirmation, or a timeout message. A
+confirmation or timeout remains visible for three seconds.
 
 Incoming numeric payloads are parsed strictly. Invalid or only partially
 numeric messages are ignored and never overwrite the last confirmed value.

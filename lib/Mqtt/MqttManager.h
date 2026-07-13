@@ -32,6 +32,8 @@ public:
     bool sendTargetTemperature(float value);
     bool sendFilterPump(bool on);
 
+    bool canSendModeCommand() const;
+
     // Kann von der späteren GUI verwendet werden, um den Filterpumpen-Schalter
     // nur bei bestätigtem, aktuellem Manual-Modus freizugeben.
     bool canSendFilterPumpCommand() const;
