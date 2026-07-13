@@ -138,6 +138,23 @@ nicht in den Skripten oder im Repository gespeichert werden.
 Die Tastatursteuerung benötigt ein normales interaktives Terminal. Sie ist
 nicht für umgeleitete Standardeingabe vorgesehen.
 
+## Automatischer Broker-Selbsttest
+
+Die Python-Version kann den vollständigen Status- und Befehlsfluss ohne
+Tastatureingabe gegen einen erreichbaren Testbroker prüfen:
+
+```sh
+python3 ./tools/loxone_mqtt_simulator.py \
+  --broker 127.0.0.1 \
+  --self-test
+```
+
+Der Selbsttest prüft retained Anfangsstatuswerte, gültige Modus-, Pumpen- und
+Solltemperaturbefehle sowie die fehlende Bestätigung eines unzulässigen
+Solltemperaturbefehls im manuellen Modus. Er beendet sich mit Exitcode `0` bei
+Erfolg und einem von null verschiedenen Exitcode bei einem Fehler. GitHub
+Actions startet dafür einen isolierten Mosquitto-Broker auf Port `18884`.
+
 ## Typische Tests
 
 ### Erfolgreiche Solltemperaturänderung

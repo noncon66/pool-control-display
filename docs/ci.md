@@ -9,7 +9,8 @@ Er führt folgende Prüfungen aus:
 2. Private Konfiguration durch die eingecheckte Beispielkonfiguration ersetzen
 3. ESP32-S3-Firmware vollständig bauen
 4. Hardwareunabhängige Unity-Tests im nativen PlatformIO-Ziel ausführen
-5. Syntax des Python-MQTT-Simulators prüfen
+5. Einen isolierten Mosquitto-Testbroker starten
+6. Status-, Befehls- und Retain-Vertrag des Python-MQTT-Simulators prüfen
 
 ## Warum die Beispielkonfiguration verwendet wird
 
@@ -21,8 +22,9 @@ temporären GitHub-Runners.
 ## Ergebnis prüfen
 
 Der Status ist im GitHub-Repository unter **Actions** sichtbar. Ein rotes
-Ergebnis bedeutet, dass mindestens Build, Test oder Syntaxprüfung fehlgeschlagen
-ist. Der Commit sollte dann nicht als geprüfter Stand verwendet werden.
+Ergebnis bedeutet, dass mindestens Build, Test oder MQTT-Integration
+fehlgeschlagen ist. Der Commit sollte dann nicht als geprüfter Stand verwendet
+werden.
 
 ## Lokale Entsprechung
 
@@ -41,3 +43,9 @@ pio test -e native
 Für die nativen Tests muss lokal ein C++-Compiler vorhanden sein. Unter macOS
 stellt ihn üblicherweise Xcode Command Line Tools bereit. GitHub Actions besitzt
 bereits einen geeigneten Compiler.
+
+MQTT-Integration mit einem lokal laufenden Broker:
+
+```sh
+python3 tools/loxone_mqtt_simulator.py --broker 127.0.0.1 --self-test
+```

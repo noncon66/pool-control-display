@@ -203,6 +203,127 @@ def handle_command(
             print("WARNING: Loxone simulation rejected filter pump command")
 
 
+def read_publish(
+    client: MqttClient,
+    timeout: float = 2.0,
+) -> tuple[int, str, str]:
+    """Liest das naechste PUBLISH-Paket und ignoriert Protokollantworten."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if not client.has_data():
+            time.sleep(0.01)
+            continue
+
+        header, body = client.read_packet()
+        if header >> 4 == 3:
+            topic, payload = parse_publish(body)
+            return header, topic, payload
+
+    raise TimeoutError("Expected MQTT publish was not received")
+
+
+def expect_status(
+    client: MqttClient,
+    expected_topic: str,
+    expected_payload: str,
+) -> None:
+    _, topic, payload = read_publish(client)
+    if (topic, payload) != (expected_topic, expected_payload):
+        raise AssertionError(
+            "Expected status "
+            f"{expected_topic}={expected_payload}, received {topic}={payload}",
+        )
+
+
+def expect_no_publish(client: MqttClient, timeout: float = 0.3) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if not client.has_data():
+            time.sleep(0.01)
+            continue
+
+        header, body = client.read_packet()
+        if header >> 4 == 3:
+            topic, payload = parse_publish(body)
+            raise AssertionError(
+                f"Unexpected status response {topic}={payload}",
+            )
+
+
+def process_next_command(client: MqttClient, state: PoolSimulation) -> None:
+    header, topic, payload = read_publish(client)
+    if not topic.startswith("pool/cmd/"):
+        raise AssertionError(f"Unexpected command topic {topic}")
+    if header & 0x01:
+        raise AssertionError(f"Command topic {topic} must not be retained")
+    handle_command(client, state, topic, payload)
+
+
+def run_self_test(args: argparse.Namespace) -> None:
+    """Prueft Status- und Befehlsfluss ueber einen echten MQTT-Broker."""
+    simulator = MqttClient(args.broker, args.port, args.username, args.password)
+    panel = MqttClient(args.broker, args.port, args.username, args.password)
+    state = PoolSimulation()
+
+    expected_initial_status = {
+        "pool/status/waterTemp": "27.4",
+        "pool/status/targetTemp": "29.0",
+        "pool/status/filterPump": "0",
+        "pool/status/heatingPump": "0",
+        "pool/status/heatingAllowed": "1",
+        "pool/status/isHeating": "0",
+        "pool/status/mode": "1",
+    }
+
+    try:
+        simulator.connect()
+        simulator.subscribe("pool/cmd/#")
+        publish_all(simulator, state)
+
+        panel.connect()
+        panel.subscribe("pool/status/#")
+
+        received_status: dict[str, str] = {}
+        while len(received_status) < len(expected_initial_status):
+            header, topic, payload = read_publish(panel)
+            if topic not in expected_initial_status:
+                continue
+            if not header & 0x01:
+                raise AssertionError(f"Initial status {topic} was not retained")
+            received_status[topic] = payload
+
+        if received_status != expected_initial_status:
+            raise AssertionError(
+                "Initial retained status differs: "
+                f"expected {expected_initial_status}, received {received_status}",
+            )
+
+        panel.publish("pool/cmd/mode", "2", retain=False)
+        process_next_command(simulator, state)
+        expect_status(panel, "pool/status/mode", "2")
+
+        panel.publish("pool/cmd/filterPump", "1", retain=False)
+        process_next_command(simulator, state)
+        expect_status(panel, "pool/status/filterPump", "1")
+
+        panel.publish("pool/cmd/targetTemp", "30.0", retain=False)
+        process_next_command(simulator, state)
+        expect_no_publish(panel)
+
+        panel.publish("pool/cmd/mode", "1", retain=False)
+        process_next_command(simulator, state)
+        expect_status(panel, "pool/status/mode", "1")
+
+        panel.publish("pool/cmd/targetTemp", "30.0", retain=False)
+        process_next_command(simulator, state)
+        expect_status(panel, "pool/status/targetTemp", "30.0")
+    finally:
+        panel.close()
+        simulator.close()
+
+    print("SELF-TEST PASSED: MQTT status and command flow is valid")
+
+
 class Keyboard:
     """Nicht blockierende Einzelzeicheneingabe für Windows und Unix-Terminals."""
 
@@ -245,11 +366,25 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--port", type=int, default=1883)
     parser.add_argument("--username", default="")
     parser.add_argument("--password", default="")
+    parser.add_argument(
+        "--self-test",
+        action="store_true",
+        help="run a non-interactive broker integration test and exit",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_arguments()
+
+    if args.self_test:
+        try:
+            run_self_test(args)
+            return 0
+        except (AssertionError, ConnectionError, OSError, RuntimeError) as error:
+            print(f"SELF-TEST FAILED: {error}", file=sys.stderr)
+            return 1
+
     client = MqttClient(args.broker, args.port, args.username, args.password)
     state = PoolSimulation()
 

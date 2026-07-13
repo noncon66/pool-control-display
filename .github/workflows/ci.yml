@@ -32,5 +32,11 @@ jobs:
       - name: Hardwareunabhängige Tests ausführen
         run: pio test -e native
 
-      - name: Python-Simulator prüfen
-        run: python -m py_compile tools/loxone_mqtt_simulator.py
+      - name: Mosquitto-Testbroker installieren
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes mosquitto
+          mosquitto -c .github/mosquitto-ci.conf -d
+
+      - name: Python-Simulator mit MQTT-Broker prüfen
+        run: python tools/loxone_mqtt_simulator.py --broker 127.0.0.1 --port 18884 --self-test
