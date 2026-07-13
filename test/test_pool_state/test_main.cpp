@@ -211,6 +211,82 @@ void test_status_updater_confirms_matching_pending_commands()
         static_cast<uint8_t>(commands.filterPump.progress));
 }
 
+void test_invalid_status_does_not_confirm_pending_command()
+{
+    PoolState state;
+    PanelCommandState commands;
+    commands.markFilterPumpPending(true, 1000);
+
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(StatusUpdateResult::InvalidPayload),
+        static_cast<uint8_t>(PoolStatusUpdater::apply(
+            state, commands, Topics::Status::FilterPump, "yes", 2000)));
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(CommandProgress::Pending),
+        static_cast<uint8_t>(commands.filterPump.progress));
+    TEST_ASSERT_FALSE(state.hasFilterPump);
+}
+
+void test_different_valid_status_updates_state_without_confirmation()
+{
+    PoolState state;
+    PanelCommandState commands;
+    commands.markModePending(PoolMode::Manual, 1000);
+
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(StatusUpdateResult::Applied),
+        static_cast<uint8_t>(PoolStatusUpdater::apply(
+            state, commands, Topics::Status::Mode, "1", 2000)));
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(PoolMode::Auto),
+        static_cast<uint8_t>(state.mode));
+    TEST_ASSERT_TRUE(state.hasMode);
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(CommandProgress::Pending),
+        static_cast<uint8_t>(commands.mode.progress));
+}
+
+void test_boolean_status_payload_is_strict()
+{
+    PoolState state;
+    PanelCommandState commands;
+
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(StatusUpdateResult::InvalidPayload),
+        static_cast<uint8_t>(PoolStatusUpdater::apply(
+            state, commands, Topics::Status::FilterPump, "TRUE", 1000)));
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(StatusUpdateResult::InvalidPayload),
+        static_cast<uint8_t>(PoolStatusUpdater::apply(
+            state, commands, Topics::Status::FilterPump, " true", 1000)));
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(StatusUpdateResult::InvalidPayload),
+        static_cast<uint8_t>(PoolStatusUpdater::apply(
+            state, commands, Topics::Status::FilterPump, "1 ", 1000)));
+    TEST_ASSERT_FALSE(state.hasFilterPump);
+    TEST_ASSERT_EQUAL_UINT32(0, state.lastStatusUpdateAt);
+}
+
+void test_status_updater_keeps_independent_freshness_timestamps()
+{
+    PoolState state;
+    PanelCommandState commands;
+
+    PoolStatusUpdater::apply(
+        state, commands, Topics::Status::Mode, "2", 1000);
+    PoolStatusUpdater::apply(
+        state, commands, Topics::Status::TargetTemperature, "28.0", 2000);
+    PoolStatusUpdater::apply(
+        state, commands, Topics::Status::FilterPump, "1", 3000);
+    PoolStatusUpdater::apply(
+        state, commands, Topics::Status::WaterTemperature, "27.0", 4000);
+
+    TEST_ASSERT_EQUAL_UINT32(1000, state.lastModeUpdateAt);
+    TEST_ASSERT_EQUAL_UINT32(2000, state.lastTargetTemperatureUpdateAt);
+    TEST_ASSERT_EQUAL_UINT32(3000, state.lastFilterPumpUpdateAt);
+    TEST_ASSERT_EQUAL_UINT32(4000, state.lastStatusUpdateAt);
+}
+
 void test_mode_payload_requires_exact_supported_value()
 {
     PoolMode mode = PoolMode::Manual;
@@ -260,6 +336,25 @@ void test_pending_command_times_out()
     TEST_ASSERT_EQUAL_UINT8(
         static_cast<uint8_t>(CommandProgress::TimedOut),
         static_cast<uint8_t>(commands.filterPump.progress));
+}
+
+void test_command_timeout_handles_millis_wraparound()
+{
+    PanelCommandState commands;
+    const uint32_t startedAt = UINT32_MAX - 1000;
+    commands.markModePending(PoolMode::Auto, startedAt);
+
+    commands.updateTimeouts(
+        startedAt + PanelCommandState::CONFIRMATION_TIMEOUT_MS - 1);
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(CommandProgress::Pending),
+        static_cast<uint8_t>(commands.mode.progress));
+
+    commands.updateTimeouts(
+        startedAt + PanelCommandState::CONFIRMATION_TIMEOUT_MS);
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(CommandProgress::TimedOut),
+        static_cast<uint8_t>(commands.mode.progress));
 }
 
 void test_command_result_returns_to_idle_after_visible_period()
@@ -488,9 +583,14 @@ int main(int argc, char** argv)
     RUN_TEST(test_status_updater_rejects_invalid_payload_without_changes);
     RUN_TEST(test_status_updater_ignores_unknown_topic);
     RUN_TEST(test_status_updater_confirms_matching_pending_commands);
+    RUN_TEST(test_invalid_status_does_not_confirm_pending_command);
+    RUN_TEST(test_different_valid_status_updates_state_without_confirmation);
+    RUN_TEST(test_boolean_status_payload_is_strict);
+    RUN_TEST(test_status_updater_keeps_independent_freshness_timestamps);
     RUN_TEST(test_mode_payload_requires_exact_supported_value);
     RUN_TEST(test_command_is_confirmed_only_by_matching_status);
     RUN_TEST(test_pending_command_times_out);
+    RUN_TEST(test_command_timeout_handles_millis_wraparound);
     RUN_TEST(test_command_result_returns_to_idle_after_visible_period);
     RUN_TEST(test_target_temperature_range_and_step);
     RUN_TEST(test_target_temperature_requires_current_automatic_mode);
