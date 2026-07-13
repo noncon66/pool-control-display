@@ -222,6 +222,33 @@ def read_publish(
     raise TimeoutError("Expected MQTT publish was not received")
 
 
+def wait_for_packet_type(
+    client: MqttClient,
+    expected_type: int,
+    timeout: float = 2.0,
+) -> None:
+    """Wartet auf eine bestimmte MQTT-Protokollantwort."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if not client.has_data():
+            time.sleep(0.01)
+            continue
+
+        header, _ = client.read_packet()
+        if header >> 4 == expected_type:
+            return
+
+    raise TimeoutError(
+        f"Expected MQTT packet type {expected_type} was not received",
+    )
+
+
+def synchronize_broker(client: MqttClient) -> None:
+    """Bestaetigt, dass der Broker alle vorher gesendeten Pakete verarbeitet hat."""
+    client.ping()
+    wait_for_packet_type(client, 13)  # PINGRESP
+
+
 def expect_status(
     client: MqttClient,
     expected_topic: str,
@@ -276,10 +303,18 @@ def run_self_test(args: argparse.Namespace) -> None:
     }
 
     try:
+        print("SELF-TEST: connecting Loxone simulator")
         simulator.connect()
         simulator.subscribe("pool/cmd/#")
-        publish_all(simulator, state)
 
+        print("SELF-TEST: publishing retained initial status")
+        publish_all(simulator, state)
+        # QoS-0-Publishes besitzen kein PUBACK. Die nachfolgende PINGRESP wird
+        # auf derselben Verbindung erst nach allen vorherigen Paketen erzeugt
+        # und beseitigt so das Rennen mit dem anschliessenden Panel-Subscribe.
+        synchronize_broker(simulator)
+
+        print("SELF-TEST: validating retained initial status")
         panel.connect()
         panel.subscribe("pool/status/#")
 
@@ -298,6 +333,7 @@ def run_self_test(args: argparse.Namespace) -> None:
                 f"expected {expected_initial_status}, received {received_status}",
             )
 
+        print("SELF-TEST: validating accepted commands")
         panel.publish("pool/cmd/mode", "2", retain=False)
         process_next_command(simulator, state)
         expect_status(panel, "pool/status/mode", "2")
@@ -306,10 +342,12 @@ def run_self_test(args: argparse.Namespace) -> None:
         process_next_command(simulator, state)
         expect_status(panel, "pool/status/filterPump", "1")
 
+        print("SELF-TEST: validating rejected command")
         panel.publish("pool/cmd/targetTemp", "30.0", retain=False)
         process_next_command(simulator, state)
         expect_no_publish(panel)
 
+        print("SELF-TEST: validating target temperature confirmation")
         panel.publish("pool/cmd/mode", "1", retain=False)
         process_next_command(simulator, state)
         expect_status(panel, "pool/status/mode", "1")
