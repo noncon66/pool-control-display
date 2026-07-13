@@ -4,27 +4,7 @@
 #include "WifiManager.h"
 #include "Topics.h"
 #include "PoolConfig.h"
-#include "MqttPayloadParser.h"
-
-namespace
-{
-    // Nur ausdrücklich unterstützte boolesche Darstellungen akzeptieren.
-    // Ungültiger Text darf nicht unbemerkt zu einem AUS-Status werden.
-    bool parseBoolPayload(const String& value, bool& result)
-    {
-        if (value == "1" || value == "true")
-        {
-            result = true;
-            return true;
-        }
-        if (value == "0" || value == "false")
-        {
-            result = false;
-            return true;
-        }
-        return false;
-    }
-}
+#include "PoolStatusUpdater.h"
 
 MqttManager* MqttManager::_instance = nullptr;
 
@@ -285,91 +265,16 @@ void MqttManager::handleMessage(char* topic, uint8_t* payload, unsigned int leng
 
     Serial.printf("[MQTT] %s = %s\n", topic, value.c_str());
 
-    // Thema zuordnen, Nutzdaten prüfen und nur das zugehörige Zustandsfeld
-    // aktualisieren. Diese Funktion trifft keine Pool-Steuerungsentscheidung.
-    if (strcmp(topic, Topics::Status::WaterTemperature) == 0)
+    const StatusUpdateResult result = PoolStatusUpdater::apply(
+        _state,
+        _commands,
+        topic,
+        value.c_str(),
+        millis());
+    if (result == StatusUpdateResult::InvalidPayload)
     {
-        float parsedValue = 0.0f;
-        if (!MqttPayloadParser::parseFloat(value.c_str(), parsedValue))
-        {
-            Serial.printf("[MQTT] invalid water temperature ignored: %s\n", value.c_str());
-            return;
-        }
-        _state.waterTemperature = parsedValue;
-        _state.hasWaterTemperature = true;
+        Serial.printf("[MQTT] invalid status payload ignored: %s\n", value.c_str());
     }
-    else if (strcmp(topic, Topics::Status::TargetTemperature) == 0)
-    {
-        float parsedValue = 0.0f;
-        if (!MqttPayloadParser::parseFloat(value.c_str(), parsedValue))
-        {
-            Serial.printf("[MQTT] invalid target temperature ignored: %s\n", value.c_str());
-            return;
-        }
-        _state.targetTemperature = parsedValue;
-        _state.hasTargetTemperature = true;
-        _state.lastTargetTemperatureUpdateAt = millis();
-        _commands.confirmTargetTemperature(parsedValue, millis());
-    }
-    else if (strcmp(topic, Topics::Status::FilterPump) == 0)
-    {
-        if (!parseBoolPayload(value, _state.filterPump))
-        {
-            Serial.printf("[MQTT] invalid filter pump state ignored: %s\n", value.c_str());
-            return;
-        }
-        _state.hasFilterPump = true;
-        _state.lastFilterPumpUpdateAt = millis();
-        _commands.confirmFilterPump(_state.filterPump, millis());
-    }
-    else if (strcmp(topic, Topics::Status::HeatingPump) == 0)
-    {
-        if (!parseBoolPayload(value, _state.heatingPump))
-        {
-            Serial.printf("[MQTT] invalid heating pump state ignored: %s\n", value.c_str());
-            return;
-        }
-        _state.hasHeatingPump = true;
-    }
-    else if (strcmp(topic, Topics::Status::HeatingAllowed) == 0)
-    {
-        if (!parseBoolPayload(value, _state.heatingAllowed))
-        {
-            Serial.printf("[MQTT] invalid heating permission ignored: %s\n", value.c_str());
-            return;
-        }
-        _state.hasHeatingAllowed = true;
-    }
-    else if (strcmp(topic, Topics::Status::IsHeating) == 0)
-    {
-        if (!parseBoolPayload(value, _state.isHeating))
-        {
-            Serial.printf("[MQTT] invalid heating status ignored: %s\n", value.c_str());
-            return;
-        }
-        _state.hasIsHeating = true;
-    }
-    else if (strcmp(topic, Topics::Status::Mode) == 0)
-    {
-        PoolMode parsedMode = PoolMode::Off;
-        if (!MqttPayloadParser::parseMode(value.c_str(), parsedMode))
-        {
-            Serial.printf("[MQTT] invalid pool mode ignored: %s\n", value.c_str());
-            return;
-        }
-
-        _state.mode = parsedMode;
-        _state.hasMode = true;
-        _state.lastModeUpdateAt = millis();
-        _commands.confirmMode(_state.mode, millis());
-    }
-    else
-    {
-        return;
-    }
-
-    // Nur gültige und bekannte Statusmeldungen aktualisieren diesen Zeitstempel.
-    _state.lastStatusUpdateAt = millis();
 }
 
 void MqttManager::mqttCallback(char* topic, byte* payload, unsigned int length)

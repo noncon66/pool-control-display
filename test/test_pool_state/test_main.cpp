@@ -5,6 +5,7 @@
 #include "PanelControlPolicy.h"
 #include "PanelViewModel.h"
 #include "MqttPayloadParser.h"
+#include "PoolStatusUpdater.h"
 #include "ScreenPowerPolicy.h"
 
 void test_new_state_has_no_confirmed_values()
@@ -95,6 +96,119 @@ void test_valid_float_payload_is_applied()
 
     TEST_ASSERT_TRUE(MqttPayloadParser::parseFloat("29.5", value));
     TEST_ASSERT_EQUAL_FLOAT(29.5f, value);
+}
+
+void test_status_updater_applies_all_status_topics()
+{
+    PoolState state;
+    PanelCommandState commands;
+    const uint32_t now = 1234;
+
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(StatusUpdateResult::Applied),
+        static_cast<uint8_t>(PoolStatusUpdater::apply(
+            state, commands, Topics::Status::WaterTemperature, "27.4", now)));
+    TEST_ASSERT_EQUAL_FLOAT(27.4f, state.waterTemperature);
+    TEST_ASSERT_TRUE(state.hasWaterTemperature);
+
+    PoolStatusUpdater::apply(
+        state, commands, Topics::Status::TargetTemperature, "29.0", now);
+    TEST_ASSERT_EQUAL_FLOAT(29.0f, state.targetTemperature);
+    TEST_ASSERT_TRUE(state.hasTargetTemperature);
+    TEST_ASSERT_EQUAL_UINT32(now, state.lastTargetTemperatureUpdateAt);
+
+    PoolStatusUpdater::apply(
+        state, commands, Topics::Status::FilterPump, "1", now);
+    PoolStatusUpdater::apply(
+        state, commands, Topics::Status::HeatingPump, "true", now);
+    PoolStatusUpdater::apply(
+        state, commands, Topics::Status::HeatingAllowed, "0", now);
+    PoolStatusUpdater::apply(
+        state, commands, Topics::Status::IsHeating, "false", now);
+    TEST_ASSERT_TRUE(state.filterPump);
+    TEST_ASSERT_TRUE(state.hasFilterPump);
+    TEST_ASSERT_EQUAL_UINT32(now, state.lastFilterPumpUpdateAt);
+    TEST_ASSERT_TRUE(state.heatingPump);
+    TEST_ASSERT_TRUE(state.hasHeatingPump);
+    TEST_ASSERT_FALSE(state.heatingAllowed);
+    TEST_ASSERT_TRUE(state.hasHeatingAllowed);
+    TEST_ASSERT_FALSE(state.isHeating);
+    TEST_ASSERT_TRUE(state.hasIsHeating);
+
+    PoolStatusUpdater::apply(
+        state, commands, Topics::Status::Mode, "2", now);
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(PoolMode::Manual),
+        static_cast<uint8_t>(state.mode));
+    TEST_ASSERT_TRUE(state.hasMode);
+    TEST_ASSERT_EQUAL_UINT32(now, state.lastModeUpdateAt);
+    TEST_ASSERT_EQUAL_UINT32(now, state.lastStatusUpdateAt);
+}
+
+void test_status_updater_rejects_invalid_payload_without_changes()
+{
+    PoolState state;
+    state.waterTemperature = 26.0f;
+    state.hasWaterTemperature = true;
+    state.lastStatusUpdateAt = 1000;
+    PanelCommandState commands;
+
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(StatusUpdateResult::InvalidPayload),
+        static_cast<uint8_t>(PoolStatusUpdater::apply(
+            state,
+            commands,
+            Topics::Status::WaterTemperature,
+            "27.0 extra",
+            2000)));
+    TEST_ASSERT_EQUAL_FLOAT(26.0f, state.waterTemperature);
+    TEST_ASSERT_EQUAL_UINT32(1000, state.lastStatusUpdateAt);
+
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(StatusUpdateResult::InvalidPayload),
+        static_cast<uint8_t>(PoolStatusUpdater::apply(
+            state, commands, Topics::Status::FilterPump, "yes", 2000)));
+    TEST_ASSERT_FALSE(state.hasFilterPump);
+    TEST_ASSERT_EQUAL_UINT32(1000, state.lastStatusUpdateAt);
+}
+
+void test_status_updater_ignores_unknown_topic()
+{
+    PoolState state;
+    PanelCommandState commands;
+
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(StatusUpdateResult::UnknownTopic),
+        static_cast<uint8_t>(PoolStatusUpdater::apply(
+            state, commands, "pool/status/unknown", "1", 2000)));
+    TEST_ASSERT_FALSE(state.hasAnyStatus());
+    TEST_ASSERT_EQUAL_UINT32(0, state.lastStatusUpdateAt);
+}
+
+void test_status_updater_confirms_matching_pending_commands()
+{
+    PoolState state;
+    PanelCommandState commands;
+    commands.markModePending(PoolMode::Manual, 1000);
+    commands.markTargetTemperaturePending(29.0f, 1000);
+    commands.markFilterPumpPending(true, 1000);
+
+    PoolStatusUpdater::apply(
+        state, commands, Topics::Status::Mode, "2", 2000);
+    PoolStatusUpdater::apply(
+        state, commands, Topics::Status::TargetTemperature, "29.0", 2000);
+    PoolStatusUpdater::apply(
+        state, commands, Topics::Status::FilterPump, "1", 2000);
+
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(CommandProgress::Confirmed),
+        static_cast<uint8_t>(commands.mode.progress));
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(CommandProgress::Confirmed),
+        static_cast<uint8_t>(commands.targetTemperature.progress));
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(CommandProgress::Confirmed),
+        static_cast<uint8_t>(commands.filterPump.progress));
 }
 
 void test_mode_payload_requires_exact_supported_value()
@@ -370,6 +484,10 @@ int main(int argc, char** argv)
     RUN_TEST(test_manual_mode_must_be_confirmed_for_manual_control);
     RUN_TEST(test_invalid_float_payload_preserves_last_confirmed_value);
     RUN_TEST(test_valid_float_payload_is_applied);
+    RUN_TEST(test_status_updater_applies_all_status_topics);
+    RUN_TEST(test_status_updater_rejects_invalid_payload_without_changes);
+    RUN_TEST(test_status_updater_ignores_unknown_topic);
+    RUN_TEST(test_status_updater_confirms_matching_pending_commands);
     RUN_TEST(test_mode_payload_requires_exact_supported_value);
     RUN_TEST(test_command_is_confirmed_only_by_matching_status);
     RUN_TEST(test_pending_command_times_out);

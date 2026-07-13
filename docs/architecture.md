@@ -20,6 +20,12 @@ fields distinguish confirmed values from initial storage defaults. Values that
 influence a control permission have their own update timestamp. A current
 temperature message therefore cannot make an old operating mode appear current.
 
+`PoolStatusUpdater` maps validated MQTT status topics to `PoolState` and
+confirms matching pending commands. It has no Arduino, Wi-Fi, or broker
+dependency, so the complete topic-to-state contract can be tested natively.
+Unknown topics and invalid payloads leave the confirmed state and its freshness
+timestamps unchanged.
+
 `PanelCommandState` tracks whether user requests are pending, confirmed, or
 timed out without changing `PoolState`.
 
