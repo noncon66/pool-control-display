@@ -57,12 +57,29 @@ Build the isolated smoke test on Windows with:
 .\tools\build_display_bringup.ps1
 ```
 
-The script uses `.pio/bringup-core` as a separate PlatformIO core directory.
+For a common workflow on macOS, Windows, and Linux, use the Python launcher:
+
+```bash
+python3 tools/display_bringup.py build
+python3 tools/display_bringup.py upload --port /dev/cu.usbmodem1101
+python3 tools/display_bringup.py monitor --port /dev/cu.usbmodem1101
+```
+
+On Windows, use `python` instead of `python3` if that is how Python is
+installed. The port can be omitted when only one compatible serial device is
+connected. The PlatformIO extension for VS Code already includes PlatformIO
+Core. For terminal-only use, follow PlatformIO's official installer guide:
+https://docs.platformio.org/en/latest/core/installation/methods/installer-script.html
+
+To find the device name on macOS, connect the board and run:
+
+```bash
+pio device list
+```
+
+Both scripts use `.pio/bringup-core` as a separate PlatformIO core directory.
 This prevents the pinned Arduino 3.2.0 packages from replacing the normal
 firmware's Arduino 2.0.17 packages in the user's global PlatformIO cache.
-
-On other systems, set `PLATFORMIO_CORE_DIR` to a separate directory before
-running `pio run -e esp32-s3-display-bringup`.
 
 It displays a white screen with red and black test text. It does not initialize
 touch, LVGL, Wi-Fi, MQTT, or any pool controls.
