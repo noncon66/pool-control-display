@@ -13,9 +13,10 @@ und anschließend ausschließlich den isolierten Display-Bring-up testen.
 - Branch `main`, `HEAD` `ea15202` (`Docs: updated handoff`),
   identisch mit `origin/main`.
 - `AGENTS.md` und `CODEX_HANDOFF.md` sind versioniert.
-- Vor dieser Aktualisierung war der Arbeitsbaum sauber.
-- Aktueller ungestagter Diff: ausschließlich diese Aktualisierung von
-  `CODEX_HANDOFF.md`. Im Index liegen keine Änderungen.
+- Vor dieser Aktualisierung war der Arbeitsbaum bis auf den gemeldeten
+  `platformio.ini`-Parsefehler sauber.
+- Aktueller ungestagter Diff: `platformio.ini` korrigiert und diese
+  Aktualisierung von `CODEX_HANDOFF.md`. Im Index liegen keine Änderungen.
 - Es wurde in dieser Sitzung nichts committet.
 
 ## Bereits erledigt
@@ -40,6 +41,8 @@ und anschließend ausschließlich den isolierten Display-Bring-up testen.
   Hardware-Bring-up und LoxBerry-Anbindung sind dokumentiert.
 - Die redundanten PowerShell-Werkzeuge wurden entfernt. `display_bringup.py`
   und `loxone_mqtt_simulator.py` sind die einzigen gepflegten Tool-Frontends.
+- Der CI-Parsefehler in `platformio.ini` wurde behoben: Das versehentliche
+  Präfix `Docs` vor `[platformio]` wurde entfernt.
 
 ## Offene Arbeit
 
@@ -118,6 +121,15 @@ und anschließend ausschließlich den isolierten Display-Bring-up testen.
   HEAD` und `git log -1 --oneline` geprüft; die Befehle lieferten die erwarteten
   Daten, aber macOS meldete im Sandbox-Kontext eine `xcrun`-Cache-Warnung.
   Es wurden keine Firmware-, Native-, Broker- oder Hardwaretests gestartet.
+- Für den gemeldeten CI-Fehler wurde `platformio.ini` gelesen und korrigiert.
+  Die Datei wurde mit `python3 -c 'import configparser; ...'` erfolgreich
+  geparst. `pio project config` wurde erfolgreich mit
+  `PLATFORMIO_CORE_DIR=/private/tmp/pio-core-pool-control-display` ausgeführt
+  und listete alle drei Environments. Ein erster `pio project config` ohne
+  temporäres Core-Verzeichnis gab die Konfiguration ebenfalls aus, meldete aber
+  beim Beenden eine Sandbox-/Home-Verzeichnis-Warnung für
+  `~/.platformio/.cache`. Es wurden keine Firmware-, Native-, Broker- oder
+  Hardwaretests gestartet.
 
 ## Nächster konkreter Schritt
 
