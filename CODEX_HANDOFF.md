@@ -3,11 +3,10 @@
 ## Aktuelles Ziel
 
 Das ESP32-S3-Pooldisplay als dünnen MQTT-Client für eine über LoxBerry
-angebundene Loxone-Poolsteuerung fertigstellen. Der hardwareunabhängige Kern,
-der MQTT-Vertrag und die LoxBerry-Integrationsdokumentation sind vorhanden. Bis
-zur Lieferung des Waveshare-Panels können Broker-/Loxone-Vertrag und
-Desktop-nahe Logik weiter geprüft werden; Display und Touch benötigen reale
-Hardware.
+angebundene Loxone-Poolsteuerung fertigstellen. Das Waveshare-Panel wird am
+14.07.2026 erwartet. Der unmittelbare nächste Meilenstein ist deshalb die
+sichere Erstprüfung am MacBook: Werksdemo dokumentieren, PCB-Revision prüfen
+und anschließend ausschließlich den isolierten Display-Bring-up testen.
 
 ## Aktueller Git-Stand
 
@@ -52,8 +51,9 @@ Hardware.
   retained Topics, Payloadformate und Aktualisierungsintervalle gegen den
   realen Broker prüft. Reale Befehle dürfen nur nach expliziter Freigabe
   gesendet werden.
-- Das gelieferte Waveshare-Panel mit dem isolierten Python-Bring-up gegen den
-  Hersteller-Demoaufbau prüfen.
+- Das Waveshare-Panel am MacBook zuerst unverändert mit der Werksdemo prüfen,
+  PCB-Revision und USB-Port dokumentieren und danach den isolierten
+  Python-Bring-up gegen den Hersteller-Demoaufbau testen.
 - Danach ST7701-Display, GT911-Touch und Backlight in die normale Firmware
   portieren, `ScreenPowerPolicy` anbinden und auf echter Hardware testen.
 - Anschließend LVGL aktivieren und Wartungs-/Einstellungsansichten ergänzen.
@@ -110,10 +110,14 @@ Hardware.
 - Der Benutzer meldete den GitHub-Actions-Lauf nach dem MQTT-
   Synchronisationsfix als erfolgreich. Für den aktuellen Handoff-Stand wurde
   in dieser Sitzung kein neuer Firmware-, Native- oder Broker-Test gestartet.
+- Für die Hardware-Erstprüfung wurden Handoff, Hardwaredokumentation,
+  Bring-up-Launcher, isolierter Smoke-Test, PlatformIO-Ziel und Boarddefinition
+  gelesen. Es wurde noch kein Hardwaretest ausgeführt.
 
 ## Nächster konkreter Schritt
 
-Einen passiven LoxBerry-Vertragstest entwerfen und implementieren, der sich mit
-dem realen Mosquitto-Broker verbindet, ohne Befehle zu senden, und die sieben
-retained Statustopics, Payloadformate sowie das 30-Sekunden-Aktualisierungsziel
-prüft. Zugangsdaten bleiben ausschließlich lokal und werden nicht versioniert.
+Am MacBook die PCB-Revision fotografieren, die Werksdemo inklusive Touch
+prüfen, den USB-Port ermitteln und danach mit `tools/display_bringup.py` nur das
+Ziel `esp32-s3-display-bringup` bauen, hochladen und beobachten. Ergebnisse,
+Seriellog und Bildschirmfoto festhalten; bei einer anderen Revision als V1.0
+vor dem Flashen stoppen.
