@@ -10,7 +10,7 @@ und anschließend ausschließlich den isolierten Display-Bring-up testen.
 
 ## Aktueller Git-Stand
 
-- Branch `main`, `HEAD` `7d2d492` (`chore: remove obsolete PowerShell tools`),
+- Branch `main`, `HEAD` `ea15202` (`Docs: updated handoff`),
   identisch mit `origin/main`.
 - `AGENTS.md` und `CODEX_HANDOFF.md` sind versioniert.
 - Vor dieser Aktualisierung war der Arbeitsbaum sauber.
@@ -113,6 +113,11 @@ und anschließend ausschließlich den isolierten Display-Bring-up testen.
 - Für die Hardware-Erstprüfung wurden Handoff, Hardwaredokumentation,
   Bring-up-Launcher, isolierter Smoke-Test, PlatformIO-Ziel und Boarddefinition
   gelesen. Es wurde noch kein Hardwaretest ausgeführt.
+- In dieser Sitzung wurden `CODEX_HANDOFF.md` und `AGENTS.md` gelesen. Der
+  Git-Stand wurde mit `git status --short --branch`, `git rev-parse --short
+  HEAD` und `git log -1 --oneline` geprüft; die Befehle lieferten die erwarteten
+  Daten, aber macOS meldete im Sandbox-Kontext eine `xcrun`-Cache-Warnung.
+  Es wurden keine Firmware-, Native-, Broker- oder Hardwaretests gestartet.
 
 ## Nächster konkreter Schritt
 
