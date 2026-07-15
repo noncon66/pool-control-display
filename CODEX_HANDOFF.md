@@ -10,10 +10,11 @@ Screen-Power-Policy und zuletzt die vorhandene LVGL-Oberfläche.
 
 ## Aktueller Git-Stand
 
-- Branch `main`, vor dieser Handoff-Aktualisierung sauber und identisch mit
-  `origin/main`.
-- Aktueller Commit: `28283c2`.
-- Durch diese Sitzung ist nur `CODEX_HANDOFF.md` ungestaged geändert.
+- Branch `main`, identisch mit `origin/main`; der Arbeitsbaum enthält die drei
+  unten genannten ungestagten Änderungen aus dem Display-Bring-up.
+- Aktueller Commit: `67ada5e` (`Docs: Handoff update`).
+- Durch diese Sitzung sind `CODEX_HANDOFF.md`, `platformio.ini` und
+  `tools/display_bringup.py` ungestaged geändert.
 
 ## Bereits erledigt
 
@@ -32,11 +33,17 @@ Screen-Power-Policy und zuletzt die vorhandene LVGL-Oberfläche.
   mit aktuellem Waveshare-Schaltbild und BSP überein.
 - Das isolierte Ziel `esp32-s3-display-bringup` zeigt nur ein statisches
   Testbild; Touch, LVGL, Wi-Fi, MQTT und Poolsteuerung bleiben dort bewusst aus.
+- Das isolierte Bring-up wurde auf das Gerät an `COM3` geflasht. Drei
+  aufeinanderfolgende RTS-Resets booteten sauber und meldeten jeweils
+  `[Bring-up] display initialized`; Build und serieller Teil des Smoke-Tests
+  sind damit bestätigt.
+- Der Display-Smoke-Test ist vollständig bestanden: Am Gerät wurden weißer
+  Hintergrund, rote Überschrift `Pool Control` und schwarzer Text
+  `Display bring-up OK` bestätigt. Zwei vollständige Strom-Aus-/Ein-Zyklen
+  zeigten das Testbild erneut stabil.
 
 ## Offene Arbeit
 
-- Nach erfolgreichem Display-Smoke-Test Ergebnis und serielles Log festhalten
-  und sicherstellen, dass Reset sowie wiederholtes Ein-/Ausschalten stabil sind.
 - Einen isolierten GT911-Test aus dem offiziellen Waveshare-BSP portieren:
   I2C-Erkennung, Rohkoordinaten, Orientierung, Achsentausch und Randpunkte prüfen.
 - ST7701-, GT911- und Backlight-Treiber in die normale Firmware portieren und
@@ -66,6 +73,9 @@ Screen-Power-Policy und zuletzt die vorhandene LVGL-Oberfläche.
   mit der BSP-Bezeichnung V1.0 gleichgesetzt.
 - Private Gerätewerte liegen nur in der ignorierten `include/PoolConfig.h`.
 - Python bleibt das einzige Frontend für Simulator und Display-Bring-up.
+- Das Bring-up-Ziel aktiviert `ARDUINO_USB_CDC_ON_BOOT=1`, damit Arduino
+  `Serial` über den USB-Serial/JTAG-Port ausgegeben wird. Der Python-Launcher
+  wählt auch beim Monitor explizit das isolierte Bring-up-Environment.
 
 ## Relevante Dateien
 
@@ -82,22 +92,25 @@ Screen-Power-Policy und zuletzt die vorhandene LVGL-Oberfläche.
 
 ## Tatsächlich ausgeführte Prüfungen
 
-- In dieser Sitzung wurden `CODEX_HANDOFF.md`, `docs/hardware.md`, `README.md`,
-  `platformio.ini` und `src/display_bringup.cpp` gelesen sowie die relevanten
-  Bring-up-, ST7701-, GT911-, Backlight-, LVGL- und Power-Policy-Verweise
-  durchsucht.
-- `git status --short --branch` zeigte vor der Handoff-Aktualisierung einen
-  sauberen Branch `main`, identisch mit `origin/main`; `git rev-parse --short
-  HEAD` lieferte `28283c2`.
-- Es wurden keine Builds, Firmware-, Native-, Broker- oder Hardwaretests
-  ausgeführt und nichts auf das Panel geflasht. Ein erfolgreicher Smoke-Test
-  wurde in dieser Sitzung nicht als tatsächlich ausgeführter Test verifiziert;
-  die besprochene Abfolge gilt für den Fall seines Erfolgs.
+- `python tools/display_bringup.py build` über PlatformIO-Python wurde für
+  `esp32-s3-display-bringup` erfolgreich ausgeführt: Arduino Core 3.2.0,
+  22.684 Byte RAM (6,9 %) und 398.322 Byte Flash (6,1 %).
+- `python tools/display_bringup.py upload --port COM3` wurde erfolgreich
+  ausgeführt. Esptool erkannte ESP32-S3 Revision 0.2, 8 MB PSRAM und 16 MB
+  Flash; alle geschriebenen Images bestanden die Hash-Prüfung.
+- Ein kontrollierter serieller RTS-Reset und zwei Wiederholungen wurden bei
+  115200 Baud ausgeführt. Alle drei Bootvorgänge meldeten den Boardnamen und
+  `[Bring-up] display initialized` ohne Initialisierungsfehler.
+- Der Monitorpfad des Python-Launchers wurde ausgeführt. Der zunächst
+  aufgetretene `UnknownPlatform`-Fehler wurde durch explizite Wahl des
+  Bring-up-Environments behoben; der Monitor öffnete danach `COM3`.
+- Der Benutzer bestätigte am realen Gerät die korrekte sichtbare Darstellung
+  und zwei erfolgreiche vollständige Strom-Aus-/Ein-Zyklen.
+- Native-, Broker- und MQTT-Tests wurden in dieser Sitzung nicht ausgeführt.
 
 ## Nächster konkreter Schritt
 
-Nach dokumentiertem erfolgreichen Display-Smoke-Test einen isolierten
-GT911-Touch-Test auf Basis des offiziellen Waveshare-BSP implementieren. Er
-soll serielle Rohkoordinaten ausgeben und Orientierung, Achsentausch sowie alle
-vier Displayränder prüfen, ohne bereits LVGL, WLAN, MQTT oder Poolbefehle zu
-aktivieren.
+Einen isolierten GT911-Touch-Test auf Basis des offiziellen Waveshare-BSP
+implementieren. Er soll serielle Rohkoordinaten ausgeben und Orientierung,
+Achsentausch sowie alle vier Displayränder prüfen, ohne bereits LVGL, WLAN,
+MQTT oder Poolbefehle zu aktivieren.

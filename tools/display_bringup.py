@@ -59,7 +59,15 @@ def main() -> int:
     env["PLATFORMIO_CORE_DIR"] = str(PROJECT_ROOT / ".pio" / "bringup-core")
 
     if args.action == "monitor":
-        command = [pio, "device", "monitor", "--baud", "115200"]
+        command = [
+            pio,
+            "device",
+            "monitor",
+            "--environment",
+            ENVIRONMENT,
+            "--baud",
+            "115200",
+        ]
         if args.port:
             command.extend(("--port", args.port))
     else:
