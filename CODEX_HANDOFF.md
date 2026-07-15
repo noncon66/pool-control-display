@@ -11,13 +11,16 @@ und anschließend ausschließlich den isolierten Display-Bring-up testen.
 
 ## Aktueller Git-Stand
 
-- Branch `main`, vor dieser Handoff-Aktualisierung sauber und laut
-  `git status --short --branch` identisch mit `origin/main`.
+- Branch `main`, vor dieser Handoff-Aktualisierung einen Commit vor
+  `origin/main`: `b789534 Docs: Windows migration handoff`.
 - `AGENTS.md` und `CODEX_HANDOFF.md` sind versioniert.
-- Vor dieser Aktualisierung war der Arbeitsbaum sauber.
-- Aktueller ungestagter Diff: nur diese Aktualisierung von `CODEX_HANDOFF.md`.
-  Im Index liegen keine Änderungen.
-- Es wurde in dieser Sitzung nichts committet.
+- Vor dieser Aktualisierung waren nur die neu erzeugten Verzeichnisse unter
+  `output/` ungetrackt.
+- Aktueller ungestagter Stand: diese Aktualisierung von `CODEX_HANDOFF.md`
+  sowie die ungetrackte finale PDF- und Textdatei. Im Index liegen keine
+  Änderungen.
+- Die PDF-/Textartefakte und diese letzte Handoff-Aktualisierung wurden in
+  dieser Sitzung nicht committet.
 
 ## Bereits erledigt
 
@@ -111,6 +114,10 @@ und anschließend ausschließlich den isolierten Display-Bring-up testen.
 - `lib/Mqtt/MqttManager.*` – MQTT-Transport, Befehle und Reconnect
 - `tools/loxone_mqtt_simulator.py`, `tools/display_bringup.py` – gepflegte
   Python-Werkzeuge
+- `output/pdf/Pool-Control-Display-Windows-Umzug.pdf` – sechsseitige, visuell
+  geprüfte Windows-Umzugscheckliste
+- `output/text/Windows-Umzug-Befehle.txt` – 29 PowerShell-/Projektbefehle mit
+  Zweck, Erwartung und Sicherheitshinweisen
 - `src/main.cpp`, `src/display_bringup.cpp` – Firmware und Hardware-Smoke-Test
 - `test/test_pool_state/test_main.cpp` – 31 native Unity-Tests
 - `.github/workflows/ci.yml`, `.github/mosquitto-ci.conf` – automatischer Build,
@@ -143,18 +150,21 @@ und anschließend ausschließlich den isolierten Display-Bring-up testen.
   beim Beenden eine Sandbox-/Home-Verzeichnis-Warnung für
   `~/.platformio/.cache`. Es wurden keine Firmware-, Native-, Broker- oder
   Hardwaretests gestartet.
-- In der aktuellen Sitzung wurden `CODEX_HANDOFF.md`, `README.md`,
-  `platformio.ini`, `.gitignore`, `PoolConfig.example.h`, die Hardware-, CI-
-  und Simulatordokumentation, der Bring-up-Launcher, die Boarddefinition sowie
-  Git-Status und Remote geprüft. Daraus wurde eine Windows-Umzugs- und
-  Verifikationscheckliste abgeleitet. Es wurden keine Firmware-, Native-,
+- In der aktuellen Sitzung wurden aus der Windows-Umzugscheckliste eine
+  sechsseitige A4-PDF und eine UTF-8-Textdatei mit 29 erklärten Befehlen
+  erstellt. Die PDF wurde mit `pdfinfo` geprüft, mit Poppler vollständig in
+  sechs PNG-Seiten gerendert und visuell auf Lesbarkeit, Abstände,
+  Überlagerungen und Kontrast geprüft. Zusätzlich wurden alle Seitenhintergründe
+  pixelweise verifiziert und der PDF-Text mit `pdfplumber` extrahiert; Seitenzahl
+  und zentrale Inhaltsmarker stimmen. Die Textdatei wurde als UTF-8 gelesen und
+  auf Zeilenzahl, Befehlsanzahl und zentrale Befehlsmarker geprüft.
+  `git diff --check` war erfolgreich. Es wurden keine Firmware-, Native-,
   Broker- oder Hardwaretests ausgeführt und nichts geflasht.
 
 ## Nächster konkreter Schritt
 
-Den aktuellen Arbeitsstand einschließlich `CODEX_HANDOFF.md` committen und zu
-GitHub pushen. Auf dem neuen Windows-Rechner Git, VS Code mit PlatformIO IDE
-und Python 3 installieren, das Repository frisch klonen, die private
-`include/PoolConfig.h` sicher wiederherstellen und Firmware-Build sowie native
-Tests prüfen. Danach das Panel über `USB TO UART` mit unveränderter Werksdemo
-prüfen und erst anschließend den isolierten Display-Bring-up verwenden.
+Die beiden Dateien unter `output/` zusammen mit dieser Handoff-Aktualisierung
+committen und den bereits einen Commit vorausliegenden Branch `main` zu GitHub
+pushen. Auf dem neuen Windows-Rechner anschließend nach der PDF-Checkliste das
+Repository frisch klonen, `include/PoolConfig.h` sicher wiederherstellen und
+Firmware-Build sowie native Tests prüfen.

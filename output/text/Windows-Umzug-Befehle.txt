@@ -1,0 +1,315 @@
+POOL CONTROL DISPLAY - WINDOWS-UMZUG
+BEFEHLE MIT BESCHREIBUNG
+Stand: 15.07.2026
+
+WICHTIG
+=======
+
+- Befehle in PowerShell ausführen.
+- Platzhalter wie COM5 durch den tatsächlich erkannten Wert ersetzen.
+- WLAN- und MQTT-Zugangsdaten niemals in Git einchecken.
+- Vor dem ersten eigenen Flash die unveränderte Werksdemo und Touch-Funktion
+  des Panels prüfen und dokumentieren.
+
+
+1. ALTEN RECHNER PRÜFEN UND SICHERN
+===================================
+
+Befehl:
+  git status
+
+Beschreibung:
+  Zeigt den aktuellen Branch sowie geänderte, neue oder zum Commit vorgemerkte
+  Dateien. Vor dem Umzug sollten keine unbeabsichtigten Änderungen offen sein.
+
+Erwartung:
+  Das Projekt befindet sich auf Branch main. Bekannte Änderungen, zum Beispiel
+  an CODEX_HANDOFF.md, werden angezeigt.
+
+
+Befehl:
+  git diff
+
+Beschreibung:
+  Zeigt den Inhalt aller noch nicht vorgemerkten Änderungen. Damit kann vor dem
+  Commit geprüft werden, ob wirklich nur gewünschte Änderungen enthalten sind.
+
+
+Befehl:
+  git add CODEX_HANDOFF.md
+
+Beschreibung:
+  Merkt ausschließlich die Übergabedatei für den nächsten Commit vor. Falls
+  weitere gewünschte Dateien geändert wurden, müssen sie bewusst einzeln
+  ergänzt werden.
+
+
+Befehl:
+  git status
+
+Beschreibung:
+  Kontrolliert erneut, welche Dateien für den Commit vorgemerkt sind. Dieser
+  Prüfschritt verhindert, dass versehentlich private oder fremde Dateien in den
+  Commit gelangen.
+
+
+Befehl:
+  git commit -m "Docs: Windows migration handoff"
+
+Beschreibung:
+  Erstellt lokal einen Commit aus den vorgemerkten Änderungen. Der Text nach
+  -m ist die Beschreibung des Commits.
+
+
+Befehl:
+  git push origin main
+
+Beschreibung:
+  Überträgt den lokalen main-Branch in das GitHub-Repository origin. Erst nach
+  einem erfolgreichen Push steht der Stand auf dem neuen Rechner bereit.
+
+
+Befehl:
+  git status
+
+Beschreibung:
+  Abschlusskontrolle auf dem alten Rechner. Idealerweise meldet Git einen
+  sauberen Arbeitsbaum und main ist auf demselben Stand wie origin/main.
+
+
+2. PROJEKT AUF DEM NEUEN RECHNER EINRICHTEN
+===========================================
+
+Befehl:
+  git --version
+
+Beschreibung:
+  Prüft, ob Git für Windows installiert und im Suchpfad verfügbar ist.
+
+
+Befehl:
+  python --version
+
+Beschreibung:
+  Prüft, ob Python 3 installiert und im Suchpfad verfügbar ist. Der Simulator
+  und der Display-Bring-up-Launcher benötigen Python 3, aber keine zusätzlichen
+  pip-Pakete.
+
+
+Befehl:
+  git clone https://github.com/noncon66/pool-control-display.git
+
+Beschreibung:
+  Lädt eine frische Kopie des Projekts von GitHub. Generierte .pio-Dateien und
+  alte VS-Code-Caches werden absichtlich nicht vom bisherigen Rechner kopiert.
+
+
+Befehl:
+  Set-Location .\pool-control-display
+
+Beschreibung:
+  Wechselt in den soeben geklonten Projektordner. Alternativ funktioniert auch
+  die Kurzform: cd .\pool-control-display
+
+
+Befehl:
+  git status
+
+Beschreibung:
+  Prüft den frisch geklonten Stand. Es sollten keine lokalen Änderungen
+  vorhanden sein.
+
+
+Befehl:
+  code .
+
+Beschreibung:
+  Öffnet den aktuellen Projektordner in Visual Studio Code. Falls "code" nicht
+  gefunden wird, kann der Ordner auch über Datei > Ordner öffnen geöffnet
+  werden.
+
+
+3. PRIVATE GERÄTEKONFIGURATION ANLEGEN
+======================================
+
+Befehl:
+  Copy-Item .\include\PoolConfig.example.h .\include\PoolConfig.h
+
+Beschreibung:
+  Erstellt aus der eingecheckten Vorlage die lokale private Konfiguration.
+  Danach PoolConfig.h in VS Code öffnen und WLAN-SSID, WLAN-Passwort,
+  MQTT-Adresse, Port sowie gegebenenfalls MQTT-Benutzer und Passwort eintragen.
+
+Wichtig:
+  include\PoolConfig.h ist durch .gitignore ausgeschlossen. Trotzdem vor jedem
+  Commit mit git status kontrollieren. OTA zunächst auf false lassen.
+
+
+Befehl:
+  Test-Path .\include\PoolConfig.h
+
+Beschreibung:
+  Prüft, ob die private Konfigurationsdatei vorhanden ist. Das erwartete
+  Ergebnis ist True. Der Inhalt wird dabei nicht angezeigt.
+
+
+4. PLATFORMIO UND PROJEKT PRÜFEN
+================================
+
+Befehl:
+  pio --version
+
+Beschreibung:
+  Prüft, ob PlatformIO Core verfügbar ist. Nach Installation der VS-Code-
+  Erweiterung kann ein Neustart von VS Code oder des Terminals nötig sein.
+
+
+Befehl:
+  pio run -e esp32-s3-panel
+
+Beschreibung:
+  Lädt beim ersten Durchlauf die festgelegten ESP32-Abhängigkeiten und baut die
+  normale Firmware. Es wird nichts auf das Panel übertragen.
+
+Erwartung:
+  Der Vorgang endet mit SUCCESS. Beim ersten Lauf kann er wegen der Downloads
+  deutlich länger dauern.
+
+
+Befehl:
+  pio test -e native
+
+Beschreibung:
+  Führt die hardwareunabhängigen Unity-Tests auf dem Windows-Rechner aus. Dafür
+  wird ein lokaler C++-Compiler benötigt. Fehlt dieser, kann der Firmwarebuild
+  trotzdem funktionieren; die Tests laufen zusätzlich in GitHub Actions.
+
+Erwartung:
+  Alle registrierten Tests bestehen.
+
+
+Befehl:
+  python .\tools\loxone_mqtt_simulator.py --help
+
+Beschreibung:
+  Prüft, ob Python den MQTT-Simulator starten kann, ohne eine Verbindung zum
+  Broker herzustellen oder Zustände zu verändern.
+
+
+Befehl:
+  python .\tools\display_bringup.py --help
+
+Beschreibung:
+  Prüft den Display-Bring-up-Launcher. Dabei wird noch nichts gebaut, geflasht
+  oder mit der Hardware verbunden.
+
+
+5. OPTIONALER MQTT-SELBSTTEST
+=============================
+
+Befehl:
+  python .\tools\loxone_mqtt_simulator.py --broker 127.0.0.1 --self-test
+
+Beschreibung:
+  Prüft Status-, Befehls- und Retain-Verhalten gegen einen lokalen MQTT-Broker.
+  Der Befehl funktioniert nur, wenn auf diesem Rechner bereits ein Testbroker
+  auf Port 1883 läuft. Er ist nicht für den produktiven LoxBerry-Broker nötig.
+
+
+Befehl:
+  python .\tools\loxone_mqtt_simulator.py --broker 192.168.1.10
+
+Beschreibung:
+  Startet den interaktiven Simulator gegen einen erreichbaren MQTT-Broker. Die
+  Beispieladresse muss durch die echte Brokeradresse ersetzt werden. Nur in
+  einer kontrollierten Testumgebung verwenden, weil der Simulator retained
+  Statuswerte veröffentlicht und Panelbefehle beantwortet.
+
+
+6. PANEL ERKENNEN UND SICHER TESTEN
+===================================
+
+Befehl:
+  pio device list
+
+Beschreibung:
+  Listet serielle Geräte und COM-Ports auf. Das Panel über den Anschluss
+  "USB TO UART" und ein USB-C-Datenkabel verbinden. Den neu erschienenen Port,
+  zum Beispiel COM5, notieren.
+
+
+Befehl:
+  python .\tools\display_bringup.py build
+
+Beschreibung:
+  Baut ausschließlich den isolierten Display-Smoke-Test mit dem festgelegten
+  Arduino-ESP32-Core. Der normale Firmwarebuild bleibt davon getrennt. Dieser
+  Befehl flasht das Panel noch nicht.
+
+
+Befehl:
+  python .\tools\display_bringup.py upload --port COM5
+
+Beschreibung:
+  Überträgt den isolierten Display-Smoke-Test auf das Panel. COM5 durch den
+  tatsächlich erkannten Port ersetzen. Diesen Schritt erst ausführen, nachdem
+  Werksdemo, Touch-Funktion, PCB-Revision und COM-Port dokumentiert wurden.
+
+Auswirkung:
+  Die Werksfirmware wird überschrieben. Der Test initialisiert nur das Display;
+  er startet weder Touch, LVGL, WLAN, MQTT noch Poolsteuerung.
+
+
+Befehl:
+  python .\tools\display_bringup.py monitor --port COM5
+
+Beschreibung:
+  Öffnet den seriellen Monitor mit 115200 Baud für den isolierten Test. Mit
+  Strg+C wird der Monitor beendet. COM5 wieder durch den echten Port ersetzen.
+
+
+7. FEHLERSUCHE
+==============
+
+Befehl:
+  Get-Command git, python, pio
+
+Beschreibung:
+  Zeigt, ob und von welchem Speicherort PowerShell die drei Programme startet.
+  Eine Fehlermeldung bei einem Namen bedeutet meist, dass die Installation
+  fehlt oder das Terminal nach der Installation neu geöffnet werden muss.
+
+
+Befehl:
+  git remote -v
+
+Beschreibung:
+  Zeigt die GitHub-Adresse für Abruf und Push. Erwartet wird das Repository
+  noncon66/pool-control-display.
+
+
+Befehl:
+  git log -1 --oneline
+
+Beschreibung:
+  Zeigt den neuesten lokalen Commit in kompakter Form. Damit kann der Stand auf
+  altem Rechner, GitHub und neuem Rechner verglichen werden.
+
+
+NICHT KOPIEREN
+==============
+
+- .pio\                         Wird von PlatformIO neu erzeugt.
+- .vscode\-Cachedateien         Rechnerabhängig und teilweise ignoriert.
+- __pycache__\ und *.pyc        Temporäre Python-Dateien.
+- Alte Build-Artefakte          Nicht die Quelle des Projekts.
+
+SEPARAT SICHERN ODER NEU EINTRAGEN
+=================================
+
+- WLAN-SSID und WLAN-Passwort
+- MQTT-Host, Port, Benutzername und Passwort
+- Optionales OTA-Passwort, falls OTA später aktiviert wird
+- Fotos der Werksdemo, PCB-Revision und Touch-Prüfung
+- Notierte COM-Port- und serielle Diagnoseinformationen
+
