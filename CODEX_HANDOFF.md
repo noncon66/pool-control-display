@@ -3,11 +3,11 @@
 ## Aktuelles Ziel
 
 Das ESP32-S3-Pooldisplay als dünnen MQTT-Client für eine über LoxBerry
-angebundene Loxone-Poolsteuerung fertigstellen. Das Waveshare-Panel ist
-eingetroffen und auf dem Benutzerfoto eindeutig als ESP32-S3-Touch-LCD-4B mit
-PCB-Aufdruck `Rev2.2` identifiziert. Der unmittelbare nächste Meilenstein ist
-die sichere Erstprüfung: Werksdemo dokumentieren und anschließend ausschließlich
-den isolierten Display-Bring-up testen.
+angebundene Loxone-Poolsteuerung fertigstellen. Die Entwicklungsumgebung soll
+zunächst reproduzierbar auf einen neuen Windows-Rechner umziehen. Danach ist
+der nächste Hardware-Meilenstein die sichere Erstprüfung des als
+ESP32-S3-Touch-LCD-4B Rev2.2 identifizierten Panels: Werksdemo dokumentieren
+und anschließend ausschließlich den isolierten Display-Bring-up testen.
 
 ## Aktueller Git-Stand
 
@@ -90,6 +90,10 @@ den isolierten Display-Bring-up testen.
   `include/PoolConfig.h`; OTA ist standardmäßig deaktiviert.
 - Python ist die alleinige Implementierung für Simulator und Display-Bring-up;
   keine parallelen PowerShell-Versionen pflegen.
+- Beim Rechnerwechsel das Repository frisch von GitHub klonen und generierte
+  `.pio`-/VS-Code-Dateien nicht übertragen. Die ignorierte private Datei
+  `include/PoolConfig.h` muss separat sicher übertragen oder aus
+  `PoolConfig.example.h` neu angelegt werden.
 - `CODEX_HANDOFF.md` ist gemäß `AGENTS.md` vor jeder Sitzung zu lesen und am
   Sitzungsende kompakt auf den tatsächlichen Stand zu aktualisieren.
 
@@ -139,19 +143,18 @@ den isolierten Display-Bring-up testen.
   beim Beenden eine Sandbox-/Home-Verzeichnis-Warnung für
   `~/.platformio/.cache`. Es wurden keine Firmware-, Native-, Broker- oder
   Hardwaretests gestartet.
-- In dieser Sitzung wurden Benutzerfoto, `CODEX_HANDOFF.md`,
-  `docs/hardware.md`, `src/display_bringup.cpp` und `platformio.ini` geprüft.
-  Die aktuelle Waveshare-Wiki, das aktuelle offizielle Schaltbild sowie der
-  offizielle Waveshare-BSP wurden online abgeglichen. `git status
-  --short --branch` zeigte vor der Handoff-Aktualisierung einen sauberen
-  `main`-Branch auf dem Stand von `origin/main`. Es wurden keine Firmware-,
-  Native-, Broker- oder Hardwaretests ausgeführt und nichts geflasht.
+- In der aktuellen Sitzung wurden `CODEX_HANDOFF.md`, `README.md`,
+  `platformio.ini`, `.gitignore`, `PoolConfig.example.h`, die Hardware-, CI-
+  und Simulatordokumentation, der Bring-up-Launcher, die Boarddefinition sowie
+  Git-Status und Remote geprüft. Daraus wurde eine Windows-Umzugs- und
+  Verifikationscheckliste abgeleitet. Es wurden keine Firmware-, Native-,
+  Broker- oder Hardwaretests ausgeführt und nichts geflasht.
 
 ## Nächster konkreter Schritt
 
-Das Panel über den auf der Platine mit `USB TO UART` beschrifteten USB-C-Port
-einschalten, die unveränderte Werksdemo inklusive Touch prüfen und Bildschirm
-sowie erkannten seriellen Port dokumentieren. Erst danach mit
-`tools/display_bringup.py` ausschließlich das Ziel
-`esp32-s3-display-bringup` bauen, hochladen und beobachten; Ergebnis,
-Seriellog und Bildschirmfoto festhalten.
+Den aktuellen Arbeitsstand einschließlich `CODEX_HANDOFF.md` committen und zu
+GitHub pushen. Auf dem neuen Windows-Rechner Git, VS Code mit PlatformIO IDE
+und Python 3 installieren, das Repository frisch klonen, die private
+`include/PoolConfig.h` sicher wiederherstellen und Firmware-Build sowie native
+Tests prüfen. Danach das Panel über `USB TO UART` mit unveränderter Werksdemo
+prüfen und erst anschließend den isolierten Display-Bring-up verwenden.
