@@ -3,20 +3,20 @@
 ## Aktuelles Ziel
 
 Das ESP32-S3-Pooldisplay als dünnen MQTT-Client für eine über LoxBerry
-angebundene Loxone-Poolsteuerung fertigstellen. Das Waveshare-Panel wird am
-14.07.2026 erwartet. Der unmittelbare nächste Meilenstein ist deshalb die
-sichere Erstprüfung am MacBook: Werksdemo dokumentieren, PCB-Revision prüfen
-und anschließend ausschließlich den isolierten Display-Bring-up testen.
+angebundene Loxone-Poolsteuerung fertigstellen. Das Waveshare-Panel ist
+eingetroffen und auf dem Benutzerfoto eindeutig als ESP32-S3-Touch-LCD-4B mit
+PCB-Aufdruck `Rev2.2` identifiziert. Der unmittelbare nächste Meilenstein ist
+die sichere Erstprüfung: Werksdemo dokumentieren und anschließend ausschließlich
+den isolierten Display-Bring-up testen.
 
 ## Aktueller Git-Stand
 
-- Branch `main`, `HEAD` `ea15202` (`Docs: updated handoff`),
-  identisch mit `origin/main`.
+- Branch `main`, vor dieser Handoff-Aktualisierung sauber und laut
+  `git status --short --branch` identisch mit `origin/main`.
 - `AGENTS.md` und `CODEX_HANDOFF.md` sind versioniert.
-- Vor dieser Aktualisierung war der Arbeitsbaum bis auf den gemeldeten
-  `platformio.ini`-Parsefehler sauber.
-- Aktueller ungestagter Diff: `platformio.ini` korrigiert und diese
-  Aktualisierung von `CODEX_HANDOFF.md`. Im Index liegen keine Änderungen.
+- Vor dieser Aktualisierung war der Arbeitsbaum sauber.
+- Aktueller ungestagter Diff: nur diese Aktualisierung von `CODEX_HANDOFF.md`.
+  Im Index liegen keine Änderungen.
 - Es wurde in dieser Sitzung nichts committet.
 
 ## Bereits erledigt
@@ -43,6 +43,11 @@ und anschließend ausschließlich den isolierten Display-Bring-up testen.
   und `loxone_mqtt_simulator.py` sind die einzigen gepflegten Tool-Frontends.
 - Der CI-Parsefehler in `platformio.ini` wurde behoben: Das versehentliche
   Präfix `Docs` vor `[platformio]` wurde entfernt.
+- Das gelieferte Panel wurde anhand des Fotos als
+  `ESP32-S3-Touch-LCD-4B Rev2.2` dokumentiert. Die aktuelle offizielle
+  Waveshare-Wiki, das aktuelle Schaltbild und der offizielle BSP wurden
+  gegengeprüft. Deren Display-Pins, I2C-Pins, Backlight-Pin, TCA9554-Adresse
+  und Expander-Resetfolge stimmen mit `src/display_bringup.cpp` überein.
 
 ## Offene Arbeit
 
@@ -54,9 +59,9 @@ und anschließend ausschließlich den isolierten Display-Bring-up testen.
   retained Topics, Payloadformate und Aktualisierungsintervalle gegen den
   realen Broker prüft. Reale Befehle dürfen nur nach expliziter Freigabe
   gesendet werden.
-- Das Waveshare-Panel am MacBook zuerst unverändert mit der Werksdemo prüfen,
-  PCB-Revision und USB-Port dokumentieren und danach den isolierten
-  Python-Bring-up gegen den Hersteller-Demoaufbau testen.
+- Das Waveshare-Panel zuerst unverändert mit der Werksdemo prüfen, Touch und
+  Bildschirm dokumentieren, den erkannten seriellen Port festhalten und danach
+  den isolierten Python-Bring-up gegen den Hersteller-Demoaufbau testen.
 - Danach ST7701-Display, GT911-Touch und Backlight in die normale Firmware
   portieren, `ScreenPowerPolicy` anbinden und auf echter Hardware testen.
 - Anschließend LVGL aktivieren und Wartungs-/Einstellungsansichten ergänzen.
@@ -77,6 +82,10 @@ und anschließend ausschließlich den isolierten Display-Bring-up testen.
 - Display-Support bleibt im Standard-Build deaktiviert, bis ST7701 und GT911
   auf echter Hardware verifiziert sind. Dafür existiert das isolierte Ziel
   `esp32-s3-display-bringup`.
+- Der PCB-Aufdruck `Rev2.2` wird nicht mit der vom offiziellen BSP genannten
+  Hardwarefamilie `V1.0` gleichgesetzt. Da die aktuelle offizielle Belegung mit
+  dem Bring-up-Code übereinstimmt, ist Rev2.2 kein belegter Inkompatibilitätsgrund;
+  vor dem ersten eigenen Flash bleibt die unveränderte Werksdemo maßgeblich.
 - Private Gerätewerte liegen nur in der ignorierten Datei
   `include/PoolConfig.h`; OTA ist standardmäßig deaktiviert.
 - Python ist die alleinige Implementierung für Simulator und Display-Bring-up;
@@ -130,11 +139,19 @@ und anschließend ausschließlich den isolierten Display-Bring-up testen.
   beim Beenden eine Sandbox-/Home-Verzeichnis-Warnung für
   `~/.platformio/.cache`. Es wurden keine Firmware-, Native-, Broker- oder
   Hardwaretests gestartet.
+- In dieser Sitzung wurden Benutzerfoto, `CODEX_HANDOFF.md`,
+  `docs/hardware.md`, `src/display_bringup.cpp` und `platformio.ini` geprüft.
+  Die aktuelle Waveshare-Wiki, das aktuelle offizielle Schaltbild sowie der
+  offizielle Waveshare-BSP wurden online abgeglichen. `git status
+  --short --branch` zeigte vor der Handoff-Aktualisierung einen sauberen
+  `main`-Branch auf dem Stand von `origin/main`. Es wurden keine Firmware-,
+  Native-, Broker- oder Hardwaretests ausgeführt und nichts geflasht.
 
 ## Nächster konkreter Schritt
 
-Am MacBook die PCB-Revision fotografieren, die Werksdemo inklusive Touch
-prüfen, den USB-Port ermitteln und danach mit `tools/display_bringup.py` nur das
-Ziel `esp32-s3-display-bringup` bauen, hochladen und beobachten. Ergebnisse,
-Seriellog und Bildschirmfoto festhalten; bei einer anderen Revision als V1.0
-vor dem Flashen stoppen.
+Das Panel über den auf der Platine mit `USB TO UART` beschrifteten USB-C-Port
+einschalten, die unveränderte Werksdemo inklusive Touch prüfen und Bildschirm
+sowie erkannten seriellen Port dokumentieren. Erst danach mit
+`tools/display_bringup.py` ausschließlich das Ziel
+`esp32-s3-display-bringup` bauen, hochladen und beobachten; Ergebnis,
+Seriellog und Bildschirmfoto festhalten.
