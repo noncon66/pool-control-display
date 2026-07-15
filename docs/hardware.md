@@ -59,6 +59,20 @@ python3 tools/display_bringup.py upload --port /dev/cu.usbmodem1101
 python3 tools/display_bringup.py monitor --port /dev/cu.usbmodem1101
 ```
 
+After the display smoke test passes, the same launcher can run the isolated
+GT911 diagnostic:
+
+```bash
+python3 tools/display_bringup.py build --target touch
+python3 tools/display_bringup.py upload --target touch --port /dev/cu.usbmodem1101
+python3 tools/display_bringup.py monitor --target touch --port /dev/cu.usbmodem1101
+```
+
+It scans the shared I2C bus, reports the GT911 product ID and configured
+resolution, then prints raw coordinates. Touch the corners in this order:
+top-left, top-right, bottom-right, bottom-left. A successful sequence verifies
+that the official BSP orientation needs no axis swap or mirroring.
+
 On Windows, use `python` instead of `python3` if that is how Python is
 installed. The port can be omitted when only one compatible serial device is
 connected. The PlatformIO extension for VS Code already includes PlatformIO

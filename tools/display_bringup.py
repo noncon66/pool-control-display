@@ -12,7 +12,10 @@ import sys
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ENVIRONMENT = "esp32-s3-display-bringup"
+ENVIRONMENTS = {
+    "display": "esp32-s3-display-bringup",
+    "touch": "esp32-s3-touch-bringup",
+}
 
 
 def find_platformio() -> str:
@@ -49,12 +52,19 @@ def parse_arguments() -> argparse.Namespace:
         "--port",
         help="Serieller Port, z. B. /dev/cu.usbmodem1101 oder COM5",
     )
+    parser.add_argument(
+        "--target",
+        choices=tuple(ENVIRONMENTS),
+        default="display",
+        help="Isoliertes Bring-up-Ziel (Standard: display)",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_arguments()
     pio = find_platformio()
+    environment = ENVIRONMENTS[args.target]
     env = os.environ.copy()
     env["PLATFORMIO_CORE_DIR"] = str(PROJECT_ROOT / ".pio" / "bringup-core")
 
@@ -64,14 +74,14 @@ def main() -> int:
             "device",
             "monitor",
             "--environment",
-            ENVIRONMENT,
+            environment,
             "--baud",
             "115200",
         ]
         if args.port:
             command.extend(("--port", args.port))
     else:
-        command = [pio, "run", "-e", ENVIRONMENT]
+        command = [pio, "run", "-e", environment]
         if args.action == "upload":
             command.extend(("--target", "upload"))
             if args.port:

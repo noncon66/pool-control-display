@@ -10,11 +10,11 @@ Screen-Power-Policy und zuletzt die vorhandene LVGL-Oberfläche.
 
 ## Aktueller Git-Stand
 
-- Branch `main`, identisch mit `origin/main`; der Arbeitsbaum enthält die drei
-  unten genannten ungestagten Änderungen aus dem Display-Bring-up.
-- Aktueller Commit: `67ada5e` (`Docs: Handoff update`).
-- Durch diese Sitzung sind `CODEX_HANDOFF.md`, `platformio.ini` und
-  `tools/display_bringup.py` ungestaged geändert.
+- Branch `main`, identisch mit `origin/main` vor den aktuellen ungestagten
+  Touch-Bring-up-Änderungen.
+- Aktueller Commit: `bf32be0` (`Hardware: Verify isolated display bring-up`).
+- Geändert sind `CODEX_HANDOFF.md`, `docs/hardware.md`, `platformio.ini`,
+  `tools/display_bringup.py` und neu `src/touch_bringup.cpp`.
 
 ## Bereits erledigt
 
@@ -41,11 +41,18 @@ Screen-Power-Policy und zuletzt die vorhandene LVGL-Oberfläche.
   Hintergrund, rote Überschrift `Pool Control` und schwarzer Text
   `Display bring-up OK` bestätigt. Zwei vollständige Strom-Aus-/Ein-Zyklen
   zeigten das Testbild erneut stabil.
+- Das isolierte Ziel `esp32-s3-touch-bringup` ist implementiert, gebaut und auf
+  `COM3` geflasht. Es initialisiert nur Wire, TCA9554-Reset und GT911 und lässt
+  Display, LVGL, Wi-Fi, MQTT und Poolsteuerung aus.
+- Der GT911 wurde auf echter Hardware an `0x5D` als Produkt `911` mit
+  Konfigurationsversion 79 und `480x480` erkannt. Der I2C-Scan fand außerdem
+  die erwarteten gemeinsam angebundenen Geräte ohne Busfehler.
+- Der GT911-Vier-Ecken-Test ist bei normal ausgerichtetem Panel bestanden:
+  oben links `(42,69)`, oben rechts `(417,72)`, unten rechts `(417,427)` und
+  unten links `(33,405)`. Achsen müssen weder getauscht noch gespiegelt werden.
 
 ## Offene Arbeit
 
-- Einen isolierten GT911-Test aus dem offiziellen Waveshare-BSP portieren:
-  I2C-Erkennung, Rohkoordinaten, Orientierung, Achsentausch und Randpunkte prüfen.
 - ST7701-, GT911- und Backlight-Treiber in die normale Firmware portieren und
   dabei den Wechsel vom Arduino-Core 2.0.17 auf den im Bring-up verwendeten
   Core 3.2.0 kontrolliert durchführen.
@@ -76,12 +83,20 @@ Screen-Power-Policy und zuletzt die vorhandene LVGL-Oberfläche.
 - Das Bring-up-Ziel aktiviert `ARDUINO_USB_CDC_ON_BOOT=1`, damit Arduino
   `Serial` über den USB-Serial/JTAG-Port ausgegeben wird. Der Python-Launcher
   wählt auch beim Monitor explizit das isolierte Bring-up-Environment.
+- Der Python-Launcher wählt mit `--target display|touch` eines der beiden
+  isolierten Ziele; `display` bleibt der abwärtskompatible Standard.
+- Der Touch-Test übernimmt aus dem offiziellen Waveshare-BSP I2C GPIO 47/48,
+  TCA9554-Resetfolge, GT911-Standardadresse `0x5D` und unveränderte Achsen ohne
+  Spiegelung. Diese Orientierung wurde am realen Panel per Eckentest bestätigt.
+- Die Touch-Release-Erkennung besitzt zusätzlich einen 150-ms-
+  Inaktivitätsfallback, da nicht jede GT911-Firmware zuverlässig ein separates
+  Release-Frame liefert.
 
 ## Relevante Dateien
 
 - `AGENTS.md`, `CODEX_HANDOFF.md` – Übergabeprozess und aktueller Stand
-- `docs/hardware.md`, `src/display_bringup.cpp`, `tools/display_bringup.py` –
-  Hardware-Bring-up
+- `docs/hardware.md`, `src/display_bringup.cpp`, `src/touch_bringup.cpp`,
+  `tools/display_bringup.py` – Hardware-Bring-up
 - `platformio.ini` – Standard-, Native-Test- und isoliertes Bring-up-Ziel
 - `docs/ui.md`, `lib/Display/`, `lib/Pool/ScreenPowerPolicy.h` – UI und
   Displayintegration
@@ -107,10 +122,24 @@ Screen-Power-Policy und zuletzt die vorhandene LVGL-Oberfläche.
 - Der Benutzer bestätigte am realen Gerät die korrekte sichtbare Darstellung
   und zwei erfolgreiche vollständige Strom-Aus-/Ein-Zyklen.
 - Native-, Broker- und MQTT-Tests wurden in dieser Sitzung nicht ausgeführt.
+- `python tools/display_bringup.py build --target touch` war erfolgreich:
+  22.476 Byte RAM (6,9 %) und 365.326 Byte Flash (5,6 %). In der Windows-
+  Sandbox scheiterte der heruntergeladene Compiler-Launcher zuvor mit
+  WinError 5; derselbe Build lief mit genehmigter Ausführung außerhalb der
+  Sandbox erfolgreich.
+- `python tools/display_bringup.py upload --target touch --port COM3` wurde
+  erfolgreich ausgeführt; alle Images bestanden die Hash-Prüfung.
+- Der serielle Hardwaretest erkannte GT911 `911` an `0x5D`, Konfiguration 79
+  und Auflösung `480x480`. Der abschließende Vier-Ecken-Test lieferte in
+  Reihenfolge `(42,69)`, `(417,72)`, `(417,427)` und `(33,405)` und meldete
+  `corner sequence PASS; orientation is not swapped or mirrored`.
+- `python tools/display_bringup.py build --target display` wurde als
+  Regressionstest erfolgreich ausgeführt. Es bleibt die bekannte
+  Narrowing-Warnung aus `Arduino_ESP32LCD8.cpp` der Drittbibliothek.
 
 ## Nächster konkreter Schritt
 
-Einen isolierten GT911-Touch-Test auf Basis des offiziellen Waveshare-BSP
-implementieren. Er soll serielle Rohkoordinaten ausgeben und Orientierung,
-Achsentausch sowie alle vier Displayränder prüfen, ohne bereits LVGL, WLAN,
-MQTT oder Poolbefehle zu aktivieren.
+ST7701-, GT911- und Backlight-Unterstützung in die normale Firmware portieren
+und dabei das Standardziel kontrolliert von Arduino Core 2.0.17 auf den im
+Bring-up bestätigten Core 3.2.0 umstellen. Zuerst nur Hardwareinitialisierung
+und serielle Diagnose integrieren; LVGL und Poolbedienung bleiben noch aus.
