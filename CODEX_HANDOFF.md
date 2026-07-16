@@ -10,11 +10,10 @@ Screen-Power-Policy und zuletzt die vorhandene LVGL-Oberfläche.
 
 ## Aktueller Git-Stand
 
-- Branch `main`, identisch mit `origin/main` vor den aktuellen ungestagten
-  Touch-Bring-up-Änderungen.
-- Aktueller Commit: `bf32be0` (`Hardware: Verify isolated display bring-up`).
-- Geändert sind `CODEX_HANDOFF.md`, `docs/hardware.md`, `platformio.ini`,
-  `tools/display_bringup.py` und neu `src/touch_bringup.cpp`.
+- Branch `claude/project-analysis-codex-if00b7`, Arbeitsbaum sauber, keine
+  ungestagten Änderungen.
+- Aktueller Commit: `5e7b921` (`Hardware: Add and verify isolated GT911
+  touch bring-up`).
 
 ## Bereits erledigt
 
@@ -143,3 +142,13 @@ ST7701-, GT911- und Backlight-Unterstützung in die normale Firmware portieren
 und dabei das Standardziel kontrolliert von Arduino Core 2.0.17 auf den im
 Bring-up bestätigten Core 3.2.0 umstellen. Zuerst nur Hardwareinitialisierung
 und serielle Diagnose integrieren; LVGL und Poolbedienung bleiben noch aus.
+
+## Sitzungsvermerk 2026-07-16 (Analyse-Sitzung)
+
+Reine Projektanalyse ohne Codeänderung: Architektur (`lib/Pool`, `lib/Mqtt`,
+`lib/Network`, `lib/Gui`, `lib/Display`, `lib/Core`), aktueller Handoff-Stand,
+`platformio.ini`-Ziele und CI wurden gesichtet und dem Nutzer zusammengefasst.
+Keine Tests ausgeführt. Inhaltlich bestätigt sich der oben stehende Stand;
+lediglich der veraltete Git-Stand-Abschnitt (verwies noch auf `bf32be0` und
+ungestagte Touch-Änderungen) wurde auf den tatsächlichen, bereits committeten
+Stand korrigiert.
