@@ -6,6 +6,7 @@
 #include "MqttManager.h"
 #include "OtaManager.h"
 #include "GuiManager.h"
+#include "DisplayManager.h"
 #include "SerialDashboard.h"
 
 class AppController
@@ -28,6 +29,7 @@ private:
     WifiManager _wifi;
     MqttManager _mqtt;
     OtaManager _ota;
+    DisplayManager _display;
     GuiManager _gui;
     SerialDashboard _dashboard;
 

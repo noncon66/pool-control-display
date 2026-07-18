@@ -14,6 +14,13 @@ void AppController::begin()
     Serial.println("=== Pool Control Display ===");
     Serial.println("Starting application...");
 
+    // Hardware integration stage: display, backlight, and raw touch are active,
+    // while LVGL and control-event forwarding intentionally remain disabled.
+    if (!_display.begin())
+    {
+        Serial.println("[App] WARNING: display hardware initialization failed");
+    }
+
     // Zuerst WLAN initialisieren, danach den WLAN-Manager an MQTT übergeben.
     _wifi.begin();
     _mqtt.begin(_wifi);
@@ -32,6 +39,7 @@ void AppController::loop()
     _wifi.loop();
     _mqtt.loop();
     _ota.loop();
+    _display.loop();
 
     // Verbindungszustände übernehmen und nur bei tatsächlichen Änderungen
     // eine Differenzausgabe erzeugen.

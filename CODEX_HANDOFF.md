@@ -2,153 +2,109 @@
 
 ## Aktuelles Ziel
 
-Das ESP32-S3-Pooldisplay als dünnen MQTT-Client für eine über LoxBerry
-angebundene Loxone-Poolsteuerung fertigstellen. Nach erfolgreichem isoliertem
-Display-Smoke-Test folgt die schrittweise Hardwareintegration: zuerst
-GT911-Touch und Koordinaten, dann Display/Touch in der normalen Firmware,
-Screen-Power-Policy und zuletzt die vorhandene LVGL-Oberfläche.
+Das ESP32-S3-Pooldisplay als dünnen MQTT-Client für die über LoxBerry
+angebundene Loxone-Poolsteuerung fertigstellen. Display, Backlight und
+GT911-Touch sind jetzt in der normalen Firmware integriert und gemeinsam auf
+Hardware bestätigt. Als nächste Stufe folgt die Anbindung der vorhandenen
+`ScreenPowerPolicy`; LVGL und Bedienbefehle bleiben bis dahin deaktiviert.
 
 ## Aktueller Git-Stand
 
-- Branch `claude/project-analysis-codex-if00b7`, Arbeitsbaum sauber, keine
-  ungestagten Änderungen.
-- Aktueller Commit: `5e7b921` (`Hardware: Add and verify isolated GT911
-  touch bring-up`).
+- Branch `main`, Ausgangscommit `0bfa87a`; Arbeitsbaum enthält die noch nicht
+  committete normale Hardwareintegration.
+- Geändert sind `platformio.ini`, `lib/Core/` und `lib/Display/`.
+- `lib/Network/` wurde wegen der Namenskollision mit Arduino Core 3.2.0 nach
+  `lib/PoolNetwork/` verschoben; öffentliche Header- und Klassennamen blieben
+  unverändert.
 
-## Bereits erledigt
+## Erledigte Änderungen
 
-- Wi-Fi-/MQTT-Reconnect, validiertes Statusmodell, strikte Payload-Auswertung,
-  Befehlsbestätigung und -timeouts, Screen-Power-Policy, serielles
-  Diagnose-Dashboard sowie optionales, standardmäßig deaktiviertes OTA sind
-  implementiert.
-- `PoolStatusUpdater` trennt Topic-/Payload-Verarbeitung von Arduino, Netzwerk
-  und Broker. Die native Testsuite enthält 31 registrierte Unity-Tests.
-- Simulator und CI prüfen Firmware-Build, native Logik sowie MQTT-Status-,
-  Befehls- und Retain-Vertrag gegen einen isolierten Mosquitto-Broker.
-- Die LoxBerry-/Loxone-Architektur ist dokumentiert: Befehle über HTTP Virtual
-  Inputs, bestätigte Zustände über UDP-Port `11884` als retained MQTT-Werte.
-- Das Panel wurde als `ESP32-S3-Touch-LCD-4B Rev2.2` identifiziert. Pinbelegung,
-  TCA9554, Resetfolge und Backlight des isolierten Display-Bring-ups stimmen
-  mit aktuellem Waveshare-Schaltbild und BSP überein.
-- Das isolierte Ziel `esp32-s3-display-bringup` zeigt nur ein statisches
-  Testbild; Touch, LVGL, Wi-Fi, MQTT und Poolsteuerung bleiben dort bewusst aus.
-- Das isolierte Bring-up wurde auf das Gerät an `COM3` geflasht. Drei
-  aufeinanderfolgende RTS-Resets booteten sauber und meldeten jeweils
-  `[Bring-up] display initialized`; Build und serieller Teil des Smoke-Tests
-  sind damit bestätigt.
-- Der Display-Smoke-Test ist vollständig bestanden: Am Gerät wurden weißer
-  Hintergrund, rote Überschrift `Pool Control` und schwarzer Text
-  `Display bring-up OK` bestätigt. Zwei vollständige Strom-Aus-/Ein-Zyklen
-  zeigten das Testbild erneut stabil.
-- Das isolierte Ziel `esp32-s3-touch-bringup` ist implementiert, gebaut und auf
-  `COM3` geflasht. Es initialisiert nur Wire, TCA9554-Reset und GT911 und lässt
-  Display, LVGL, Wi-Fi, MQTT und Poolsteuerung aus.
-- Der GT911 wurde auf echter Hardware an `0x5D` als Produkt `911` mit
-  Konfigurationsversion 79 und `480x480` erkannt. Der I2C-Scan fand außerdem
-  die erwarteten gemeinsam angebundenen Geräte ohne Busfehler.
-- Der GT911-Vier-Ecken-Test ist bei normal ausgerichtetem Panel bestanden:
-  oben links `(42,69)`, oben rechts `(417,72)`, unten rechts `(417,427)` und
-  unten links `(33,405)`. Achsen müssen weder getauscht noch gespiegelt werden.
+- Der normale Build verwendet jetzt pioarduino `54.03.20` mit Arduino-ESP32
+  Core 3.2.0 und aktiviert USB CDC beim Boot.
+- Arduino_GFX 1.6.0 ist eine Abhängigkeit des normalen Ziels; die frühere
+  Ausklammerung von `lib/Display` wurde entfernt.
+- `DisplayManager` verwendet die am echten Waveshare
+  ESP32-S3-Touch-LCD-4B bestätigten ST7701-/RGB-Pins und Timings, TCA9554,
+  I2C GPIO 47/48, GT911 an `0x5D`/`0x14` und aktives-low Backlight-PWM an
+  GPIO 4.
+- Beim Start erscheint ein weißes Hardware-Diagnosebild mit rotem
+  `Pool Control` und schwarzem Status für Display, Touch und deaktiviertes
+  LVGL. Raw-Touch-Ereignisse werden seriell ausgegeben.
+- `AppController` startet und pollt `DisplayManager` vor bzw. neben den
+  bestehenden Wi-Fi-, MQTT- und OTA-Komponenten. `GuiManager` wird weiterhin
+  nicht initialisiert; Touch löst keine Steuerbefehle aus.
+- Die lokale Bibliothek heißt nun `PoolNetwork`, damit sie nicht mit der neuen
+  Framework-Bibliothek `Networking` kollidiert.
+- Weil die WiFi-Metadaten des Arduino Core 3.2.0 ihre Abhängigkeit zu
+  `Networking` nicht deklarieren, ergänzt das normale Ziel dessen Include-Pfad
+  portabel über PlatformIOs `$PROJECT_PACKAGES_DIR`.
 
 ## Offene Arbeit
 
-- ST7701-, GT911- und Backlight-Treiber in die normale Firmware portieren und
-  dabei den Wechsel vom Arduino-Core 2.0.17 auf den im Bring-up verwendeten
-  Core 3.2.0 kontrolliert durchführen.
-- `ScreenPowerPolicy` an Backlight und Touch-Wakeup anbinden; Schlafen und
-  Aufwachen ohne Display-Neustart prüfen.
-- LVGL 8.4 aktivieren, Display-Flush und Touch-Input registrieren und zuerst
-  den vorhandenen Hauptbildschirm auf echter Hardware testen.
+- `ScreenPowerPolicy` mit Backlight und Touch-Wakeup verbinden; Schlafen und
+  Aufwachen ohne Display-Neustart auf Hardware prüfen.
+- LVGL 8.4 aktivieren, Display-Flush und Touch-Input registrieren und den
+  vorhandenen Hauptbildschirm auf echter Hardware testen.
 - Danach MQTT/LoxBerry-End-to-End prüfen: retained Startzustand, stale/offline,
-  Befehlsbestätigung, Timeout und Reconnect. Erst anschließend Wartungs- und
-  Einstellungsansichten ergänzen.
-- Die reale LoxBerry-/Loxone-Zuordnung einrichten: drei virtuelle
-  Befehlseingänge, UDP-Ausgang `11884`, sieben retained Statustopics und
-  Aktualisierung spätestens alle 30 Sekunden.
+  Befehlsbestätigung, Timeout und Reconnect.
+- Native Tests erneut ausführen, sobald auf dem Windows-Host `gcc/g++` oder
+  eine passende Native-Toolchain verfügbar ist.
 
 ## Wichtige technische Entscheidungen
 
 - Loxone bleibt alleiniger Controller. Das Panel zeigt bestätigte MQTT-Werte;
-  keine optimistischen UI-Updates.
+  es gibt keine optimistischen UI-Updates.
 - Statusmeldungen sind retained, Befehlstopics nicht. Unbekannte, stale oder
   offline Daten sperren die betroffenen Bedienelemente.
-- Displayintegration bleibt bis zur Hardwareverifikation vom Standard-Build
-  getrennt. Änderungen werden in kleinen, rückrollbaren Stufen integriert.
-- Das offizielle Waveshare-BSP ist die Quelle für ST7701, GT911, Timing,
-  IO-Expander, Reset und Backlight. Der Aufdruck Rev2.2 wird nicht ungeprüft
-  mit der BSP-Bezeichnung V1.0 gleichgesetzt.
+- Hardwareintegration erfolgt weiterhin stufenweise: derzeit sind Display,
+  Backlight und reine Touch-Diagnose aktiv, LVGL und Bedienung bewusst aus.
+- Das offizielle Waveshare-BSP und die erfolgreichen isolierten Bring-ups sind
+  die Quelle für Pinbelegung, Timing, Resetfolge und Orientierung.
+- Die unveränderten GT911-Achsen wurden am realen Panel per Vier-Ecken-Test
+  bestätigt. Ein 150-ms-Inaktivitätsfallback erkennt Touch-Release.
+- Arduino_GFX ruft intern erneut `Wire.begin()` auf. Die daraus entstehende
+  Core-3.2-Warnung ist erwartet; die vorherige Initialisierung mit GPIO 47/48
+  bleibt notwendig.
 - Private Gerätewerte liegen nur in der ignorierten `include/PoolConfig.h`.
-- Python bleibt das einzige Frontend für Simulator und Display-Bring-up.
-- Das Bring-up-Ziel aktiviert `ARDUINO_USB_CDC_ON_BOOT=1`, damit Arduino
-  `Serial` über den USB-Serial/JTAG-Port ausgegeben wird. Der Python-Launcher
-  wählt auch beim Monitor explizit das isolierte Bring-up-Environment.
-- Der Python-Launcher wählt mit `--target display|touch` eines der beiden
-  isolierten Ziele; `display` bleibt der abwärtskompatible Standard.
-- Der Touch-Test übernimmt aus dem offiziellen Waveshare-BSP I2C GPIO 47/48,
-  TCA9554-Resetfolge, GT911-Standardadresse `0x5D` und unveränderte Achsen ohne
-  Spiegelung. Diese Orientierung wurde am realen Panel per Eckentest bestätigt.
-- Die Touch-Release-Erkennung besitzt zusätzlich einen 150-ms-
-  Inaktivitätsfallback, da nicht jede GT911-Firmware zuverlässig ein separates
-  Release-Frame liefert.
 
 ## Relevante Dateien
 
 - `AGENTS.md`, `CODEX_HANDOFF.md` – Übergabeprozess und aktueller Stand
-- `docs/hardware.md`, `src/display_bringup.cpp`, `src/touch_bringup.cpp`,
-  `tools/display_bringup.py` – Hardware-Bring-up
-- `platformio.ini` – Standard-, Native-Test- und isoliertes Bring-up-Ziel
-- `docs/ui.md`, `lib/Display/`, `lib/Pool/ScreenPowerPolicy.h` – UI und
-  Displayintegration
-- `docs/mqtt.md`, `docs/loxone.md`, `tools/loxone_mqtt_simulator.py` – Vertrag
-  und reale Anbindung
-- `src/main.cpp`, `lib/Pool/`, `lib/Mqtt/` – normale Firmware
-- `test/test_pool_state/test_main.cpp` – 31 native Unity-Tests
+- `platformio.ini` – Standard-, Native-Test- und isolierte Bring-up-Ziele
+- `lib/Display/DisplayManager.*` – ST7701, TCA9554, Backlight und GT911
+- `lib/Core/AppController.*` – Integration in die normale Firmware
+- `lib/PoolNetwork/` – Wi-Fi und OTA nach der Framework-Namenskollision
+- `lib/Pool/ScreenPowerPolicy.h`, `lib/Gui/` – nächste Integrationsstufen
+- `src/display_bringup.cpp`, `src/touch_bringup.cpp`,
+  `tools/display_bringup.py` – weiterhin verfügbare isolierte Diagnosen
 
 ## Tatsächlich ausgeführte Prüfungen
 
-- `python tools/display_bringup.py build` über PlatformIO-Python wurde für
-  `esp32-s3-display-bringup` erfolgreich ausgeführt: Arduino Core 3.2.0,
-  22.684 Byte RAM (6,9 %) und 398.322 Byte Flash (6,1 %).
-- `python tools/display_bringup.py upload --port COM3` wurde erfolgreich
-  ausgeführt. Esptool erkannte ESP32-S3 Revision 0.2, 8 MB PSRAM und 16 MB
-  Flash; alle geschriebenen Images bestanden die Hash-Prüfung.
-- Ein kontrollierter serieller RTS-Reset und zwei Wiederholungen wurden bei
-  115200 Baud ausgeführt. Alle drei Bootvorgänge meldeten den Boardnamen und
-  `[Bring-up] display initialized` ohne Initialisierungsfehler.
-- Der Monitorpfad des Python-Launchers wurde ausgeführt. Der zunächst
-  aufgetretene `UnknownPlatform`-Fehler wurde durch explizite Wahl des
-  Bring-up-Environments behoben; der Monitor öffnete danach `COM3`.
-- Der Benutzer bestätigte am realen Gerät die korrekte sichtbare Darstellung
-  und zwei erfolgreiche vollständige Strom-Aus-/Ein-Zyklen.
-- Native-, Broker- und MQTT-Tests wurden in dieser Sitzung nicht ausgeführt.
-- `python tools/display_bringup.py build --target touch` war erfolgreich:
-  22.476 Byte RAM (6,9 %) und 365.326 Byte Flash (5,6 %). In der Windows-
-  Sandbox scheiterte der heruntergeladene Compiler-Launcher zuvor mit
-  WinError 5; derselbe Build lief mit genehmigter Ausführung außerhalb der
-  Sandbox erfolgreich.
-- `python tools/display_bringup.py upload --target touch --port COM3` wurde
-  erfolgreich ausgeführt; alle Images bestanden die Hash-Prüfung.
-- Der serielle Hardwaretest erkannte GT911 `911` an `0x5D`, Konfiguration 79
-  und Auflösung `480x480`. Der abschließende Vier-Ecken-Test lieferte in
-  Reihenfolge `(42,69)`, `(417,72)`, `(417,427)` und `(33,405)` und meldete
-  `corner sequence PASS; orientation is not swapped or mirrored`.
-- `python tools/display_bringup.py build --target display` wurde als
-  Regressionstest erfolgreich ausgeführt. Es bleibt die bekannte
-  Narrowing-Warnung aus `Arduino_ESP32LCD8.cpp` der Drittbibliothek.
+- Mehrere normale Builds dienten der Migration; die ersten scheiterten an
+  fehlendem `Network.h`. Nach Umbenennung zu `PoolNetwork` und portablem
+  Framework-Include war `pio run -e esp32-s3-panel` erfolgreich: 51.916 Byte
+  RAM (15,8 %) und 1.031.694 Byte Flash (15,7 %).
+- `pio test -e native` wurde gestartet, konnte aber nicht gebaut werden, weil
+  auf dem Host weder `gcc` noch `g++` gefunden wurde. Es wurden daher keine
+  nativen Testfälle ausgeführt.
+- Die normale Firmware wurde erfolgreich auf den ESP32-S3 an `COM3` geladen;
+  Chip, 8 MB PSRAM und 16 MB Flash wurden erkannt, alle Images bestanden die
+  Hash-Prüfung.
+- Ein kontrollierter serieller RTS-Reset zeigte:
+  `ST7701 initialized`, GT911 Produkt `911` an `0x5D`, Konfiguration 79,
+  Auflösung `480x480`, `touch=ready, LVGL=disabled`.
+- Im selben Boot verband sich das Gerät mit Wi-Fi (`192.168.178.120`) und dem
+  MQTT-Broker; Abonnements wurden erfolgreich eingerichtet.
+- Der Benutzer bestätigte in der normalen Firmware den weißen Hintergrund,
+  das rote `Pool Control` sowie die schwarzen Meldungen
+  `Hardware integration OK`, `GT911 touch ready` und `LVGL disabled`.
+- Ein kurzer Tipp auf das laufende normale System wurde seriell als
+  `[Display] touch raw x=269 y=309 strength=18` erfasst.
+- Die früheren isolierten Display- und Touch-Bring-ups bleiben auf realer
+  Hardware bestätigt: sichtbares Testbild nach zwei Power-Cycles sowie
+  bestandener GT911-Vier-Ecken-Test ohne Achsentausch oder Spiegelung.
 
 ## Nächster konkreter Schritt
 
-ST7701-, GT911- und Backlight-Unterstützung in die normale Firmware portieren
-und dabei das Standardziel kontrolliert von Arduino Core 2.0.17 auf den im
-Bring-up bestätigten Core 3.2.0 umstellen. Zuerst nur Hardwareinitialisierung
-und serielle Diagnose integrieren; LVGL und Poolbedienung bleiben noch aus.
-
-## Sitzungsvermerk 2026-07-16 (Analyse-Sitzung)
-
-Reine Projektanalyse ohne Codeänderung: Architektur (`lib/Pool`, `lib/Mqtt`,
-`lib/Network`, `lib/Gui`, `lib/Display`, `lib/Core`), aktueller Handoff-Stand,
-`platformio.ini`-Ziele und CI wurden gesichtet und dem Nutzer zusammengefasst.
-Keine Tests ausgeführt. Inhaltlich bestätigt sich der oben stehende Stand;
-lediglich der veraltete Git-Stand-Abschnitt (verwies noch auf `bf32be0` und
-ungestagte Touch-Änderungen) wurde auf den tatsächlichen, bereits committeten
-Stand korrigiert.
+`ScreenPowerPolicy` an Backlight und Touch-Wakeup anbinden und anschließend
+Schlafen sowie Aufwachen ohne Display-Neustart auf echter Hardware prüfen.
