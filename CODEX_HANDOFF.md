@@ -3,107 +3,93 @@
 ## Aktuelles Ziel
 
 Das ESP32-S3-Pooldisplay als dünnen MQTT-Client für die über LoxBerry
-angebundene Loxone-Poolsteuerung fertigstellen. LVGL-Ausgabe, GT911-Pointer,
-Backlight und sichere Screen-Off/Wake-Logik sind integriert und auf Hardware
-bestätigt. Als Nächstes können produktive MQTT-Bedienbefehle bewusst aktiviert
-und End-to-End gegen LoxBerry/Loxone geprüft werden.
+angebundene Loxone-Poolsteuerung fertigstellen. Display, Touch, Screen-Power
+und alle drei MQTT-Befehlswege sind gegen den LoxBerry-Broker bestätigt. Die
+Weiterleitung vom MQTT Gateway zum Miniserver ist noch nicht eingerichtet und
+bildet den nächsten Integrationsschritt.
 
 ## Aktueller Git-Stand
 
-- Branch `main`, Ausgangscommit `90d4287` (`Display: Add stable screen-off and
-  touch-wake behavior`).
-- Uncommittete Änderungen in `DisplayManager`, `AppController`, `GuiManager`,
-  `WifiManager` und `CODEX_HANDOFF.md`.
-- Die normale Fünf-Minuten-Firmware `esp32-s3-panel` ist auf `COM3` geflasht;
-  das verkürzte Power-Testziel befindet sich nicht mehr auf dem Gerät.
+- Branch `main`, Ausgangscommit `2b500ae` (`Display: Integrate LVGL touch input
+  and safe wake handling`).
+- Uncommittete Änderungen in `AppController.cpp`, `DisplayManager.cpp`,
+  `MqttManager.cpp` und `CODEX_HANDOFF.md`.
+- Normale Fünf-Minuten-Firmware mit aktivierter, policy-geschützter
+  MQTT-Bedienung ist auf `COM3` geflasht.
+- Kein Simulatorprozess läuft; temporäre Testskripte und retained Testwerte
+  wurden entfernt.
 
 ## Erledigte Änderungen
 
-- `DisplayManager` registriert das 480×480-ST7701-Panel über Arduino_GFX und
-  einen LVGL-Flush-Callback. Der partielle Puffer umfasst 40 Zeilen/38.400 Byte
-  im PSRAM.
-- GT911 ist als LVGL-Pointer registriert und liefert Koordinaten sowie
-  Press/Release. Der LVGL-Timer pausiert während Screen-Off.
-- Ein Wake-Touch bleibt bis zum vollständigen Loslassen für LVGL gesperrt.
-  Erst ein neuer Touch bei bereits wachem Display darf das UI erreichen.
-- `GuiManager` hat einen separaten `controlsEnabled`-Schalter. Im sicheren
-  Bring-up ist er `false`: Buttons reagieren visuell und protokollieren den
-  Treffer, aber alle MQTT-Befehle sind hart gesperrt.
-- Im Touch-Testmodus bleiben Buttons trotz unbekannter/stale Daten visuell
-  testbar. Bei später aktivierter Produktivbedienung greift automatisch wieder
-  die normale Offline-/Stale-/Unknown-Sperre.
-- `WifiManager` setzt `WiFi.persistent(false)`, damit Reconnects nicht unnötig
-  Flash schreiben und dabei mit der kontinuierlichen RGB-DMA kollidieren.
-  Der Reconnect-Timer zählt nun ab dem tatsächlichen Verbindungsversuch.
-- PWM-Dimmen bleibt wegen nachgewiesenem Flackern deaktiviert. Das Panel bleibt
-  bei 100 % und wechselt nach fünf Minuten direkt schwarz/aus.
+- `AppController` startet `GuiManager` mit `controlsEnabled=true`.
+- Produktive Controls verwenden ausschließlich die zentrale
+  Offline-/Stale-/Unknown-/Modus-Freigabe aus `PanelViewModel` und
+  `PanelControlPolicy`.
+- `MqttManager::publishCommand()` protokolliert erfolgreiche Publishes mit
+  Topic und Payload. Befehlstopics bleiben nicht retained.
+- Boot-Logs melden `MQTT controls=enabled`; die veraltete Disabled-Meldung im
+  Displaytreiber wurde entfernt.
+- Wake-Sperre bleibt unverändert: erster Touch aus Off weckt nur, erst der
+  nächste Touch darf LVGL und damit MQTT erreichen.
 
 ## Offene Arbeit
 
-- Produktive MQTT-Bedienung bewusst aktivieren (`controlsEnabled=true`) und
-  dabei die bestehende Offline-/Stale-/Unknown-Freigabe beibehalten.
-- End-to-End gegen LoxBerry/Loxone prüfen: retained Startzustand,
-  Betriebsmodus, Solltemperatur, Filterpumpe, Befehlsbestätigung, Timeout,
-  stale/offline und Reconnect.
-- Die im UI derzeit unbekannten Loxone-Daten beziehungsweise retained Topics
-  prüfen, bevor echte Befehle ausgelöst werden.
-- Native Tests erneut ausführen, sobald auf dem Windows-Host `gcc/g++` oder
-  eine passende Native-Toolchain verfügbar ist.
+- LoxBerry MQTT Gateway für `pool/cmd/#` zum Miniserver konfigurieren.
+- Loxone so konfigurieren, dass alle sieben `pool/status/#`-Werte retained
+  über LoxBerry publiziert werden.
+- Danach echtes End-to-End testen: Solltemperatur in Automatik, Filterpumpe in
+  Manuell, Betriebsmodus, Bestätigung, Timeout, stale/offline und Reconnect.
+- Native Tests erneut ausführen, sobald `gcc/g++` verfügbar ist.
 
 ## Wichtige technische Entscheidungen
 
-- Loxone bleibt alleiniger Controller. Das Panel zeigt bestätigte MQTT-Werte;
-  keine optimistischen UI-Updates.
-- Statusmeldungen sind retained, Befehlstopics nicht. Unbekannte, stale oder
-  offline Daten sperren die betroffenen Bedienelemente.
-- Off bedeutet: Framebuffer schwarz, Backlight statisch aus, RGB-Panel und
-  GT911 bleiben initialisiert.
-- Keine RGB-DMA-Bounce-Buffer: Ein Versuch mit 20 Zeilen verschob den
-  Cache/PSRAM-Absturz nur in `lcd_rgb_panel_fill_bounce_buffer` und wurde
-  vollständig zurückgenommen.
-- WLAN-Konfiguration bleibt zur Laufzeit nichtpersistent, um Flash-Cache-Stalls
-  während aktiver RGB-DMA zu vermeiden.
-- Die unveränderten GT911-Achsen wurden per Vier-Ecken- und Button-Test
-  bestätigt. Ein 150-ms-Inaktivitätsfallback erkennt Touch-Release.
+- Loxone bleibt alleiniger Controller. Das Panel zeigt keine optimistischen
+  Zustände; Befehle gelten erst durch ein Statustopic als bestätigt.
+- Statusmeldungen sind retained, Befehlstopics nicht.
+- Ohne frische Statusdaten bleiben produktive Controls gesperrt, auch wenn der
+  MQTT-Broker verbunden ist.
+- WLAN bleibt nichtpersistent (`WiFi.persistent(false)`), um Flash-Cache-Stalls
+  während kontinuierlicher RGB-DMA zu vermeiden.
 - Private Gerätewerte liegen nur in der ignorierten `include/PoolConfig.h`.
 
 ## Relevante Dateien
 
-- `AGENTS.md`, `CODEX_HANDOFF.md` – Übergabeprozess und aktueller Stand
-- `platformio.ini` – normales Ziel, Power-Test und isolierte Bring-ups
-- `lib/Display/DisplayManager.*` – ST7701, LVGL-Flush/Pointer, Backlight, GT911
-- `lib/Core/AppController.*` – GUI-, Screen-Power- und Wake-Integration
-- `lib/Gui/GuiManager.*`, `lib/Gui/PanelViewModel.*` – Hauptansicht und sichere
-  Bedienfreigabe
-- `lib/PoolNetwork/WifiManager.*` – nichtpersistente WLAN-Reconnects
-- `lib/Pool/ScreenPowerPolicy.h` – Zeitlogik und optionales Dimmen
+- `lib/Core/AppController.cpp` – Aktivierung der produktiven GUI-Callbacks
+- `lib/Mqtt/MqttManager.*`, `lib/Mqtt/Topics.h` – Publish, Status und Topics
+- `lib/Gui/GuiManager.*`, `lib/Pool/PanelViewModel.h` – UI und Freigaben
+- `lib/Pool/PanelControlPolicy.h` – Modus-/Freshness-Regeln
+- `tools/loxone_mqtt_simulator.py` – retained Status und Befehlsbestätigung
+- `docs/mqtt.md`, `docs/loxone.md`, `docs/simulator.md` – Protokoll und Test
 
 ## Tatsächlich ausgeführte Prüfungen
 
-- LVGL-Hauptansicht auf Hardware visuell bestätigt: Orientierung, Farben,
-  Layout und Darstellung sehen gut aus.
-- Touch-Koordinaten bestätigt: `AUTOMATIK` etwa (250, 310), Minus (70, 425),
-  Plus (445, 420). Alle Buttons reagieren nach Testmodus-Korrektur sichtbar.
-- Serielle Callback-Prüfung bestätigt `mode touch=1`, `target touch=minus` und
-  `target touch=plus`, jeweils mit `MQTT control suppressed`.
-- Während eines WLAN-Reconnects trat zunächst `Cache disabled but cached memory
-  region accessed` im RGB-DMA-ISR auf. Backtrace mit `addr2line` dekodiert.
-- Ein Bounce-Buffer-Versuch schlug fehl und wurde zurückgenommen. Mit
-  `WiFi.persistent(false)` lief der folgende 45-Sekunden-Test inklusive WLAN,
-  MQTT und zahlreichen Touches ohne Panic.
-- Der danach korrigierte erste Reconnect-Versuch startete ohne unnötigen
-  zweiten `WiFi.begin`, ohne Panic und verband WLAN/MQTT erfolgreich.
-- Verkürztes Power-Testziel erfolgreich gebaut und geflasht. Seriell bestätigt:
-  Off nach 30 Sekunden, erster Touch nur `wake touch; control forwarding
-  suppressed`, zweiter Touch `mode touch=1; MQTT control suppressed`.
-- Normale Firmware abschließend gebaut: 102.532 Byte RAM (31,3 %) und
-  1.247.334 Byte Flash (19,0 %), erfolgreich mit Hash-Prüfung auf COM3 geladen.
-- `git diff --check` war vor den Builds erfolgreich. Temporäre Capture-Skripte
-  wurden entfernt.
+- Firmware erfolgreich gebaut: 102.532 Byte RAM (31,3 %) und 1.247.374 Byte
+  Flash (19,0 %), anschließend erfolgreich mit Hash-Prüfung auf COM3 geladen.
+- Simulator veröffentlichte sieben retained Statuswerte; Panel empfing sie und
+  meldete `Loxone data: CURRENT`.
+- Plus-Touch veröffentlichte nicht retained `pool/cmd/targetTemp = 29.5`;
+  Simulator bestätigte retained `pool/status/targetTemp = 29.5`, UI aktualisiert.
+- `MANUELL` veröffentlichte nicht retained `pool/cmd/mode = 2`; Simulator
+  bestätigte retained `pool/status/mode = 2`, UI wechselte zu Manuell.
+- Filterpumpen-Touch veröffentlichte nicht retained
+  `pool/cmd/filterPump = 1`; Simulator bestätigte retained
+  `pool/status/filterPump = 1`, UI zeigte EIN.
+- Simulatorlog bestätigte alle drei empfangenen Command-Topics und die jeweils
+  zurückgesendeten Statuswerte.
+- Der vollständige Drei-Befehle-Test wurde auf Benutzerwunsch ein zweites Mal
+  wiederholt und erneut bestanden: Soll 29,0→29,5 °C, Automatik→Manuell und
+  Filterpumpe AUS→EIN, jeweils Publish plus Statusbestätigung.
+- Simulator beendet und alle sieben retained Teststatuswerte mit leeren
+  retained Publishes vom LoxBerry-Broker gelöscht. Auch nach dem zweiten Test
+  wurden Simulator und retained Testwerte wieder entfernt.
+- Panel danach neu gestartet: WLAN und MQTT verbunden, keine simulierten
+  Statuswerte empfangen, `Loxone data: UNKNOWN`; Cleanup damit bestätigt.
+- `git diff --check` war vor Build und abschließender Prüfung erfolgreich.
 - Native Tests nicht ausgeführt; dem Host fehlt weiterhin `gcc/g++`.
 
 ## Nächster konkreter Schritt
 
-Zuerst klären, warum keine retained Loxone-Zustände ankommen. Sobald gültige
-Werte vorliegen, `controlsEnabled=true` setzen und die drei Befehlswege einzeln
-End-to-End testen, beginnend mit einem risikoarmen Betriebsmodus-Test.
+Die MQTT-Gateway-Subscription `pool/cmd/#` und die zugehörigen virtuellen
+Loxone-Eingänge einrichten. Danach die sieben retained Statustopics vom
+Miniserver über LoxBerry publizieren und denselben Drei-Befehle-Test ohne
+Simulator wiederholen.

@@ -354,7 +354,7 @@ bool DisplayManager::initLvglTouch()
         return false;
     }
 
-    Serial.println("[Display] LVGL touch ready; MQTT controls disabled");
+    Serial.println("[Display] LVGL touch ready");
     return true;
 }
 

@@ -189,6 +189,7 @@ bool MqttManager::publishCommand(const char* topic, const char* payload)
         return false;
     }
 
+    Serial.printf("[MQTT] command published: %s = %s\n", topic, payload);
     return true;
 }
 

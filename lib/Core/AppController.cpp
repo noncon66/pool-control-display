@@ -32,8 +32,8 @@ void AppController::begin()
     Serial.println("=== Pool Control Display ===");
     Serial.println("Starting application...");
 
-    // Display output and pointer input are active through LVGL. Productive
-    // control interaction remains disabled during touch bring-up.
+    // Display output and pointer input are active through LVGL. Control
+    // interaction remains guarded by the central MQTT/state policy.
     if (!_display.begin())
     {
         Serial.println("[App] WARNING: display hardware initialization failed");
@@ -47,9 +47,9 @@ void AppController::begin()
 
     if (_display.isLvglReady())
     {
-        _gui.begin(_state, _mqtt, false);
+        _gui.begin(_state, _mqtt, true);
         Serial.printf(
-            "[App] LVGL main screen initialized; touch=%s, MQTT controls=disabled\n",
+            "[App] LVGL main screen initialized; touch=%s, MQTT controls=enabled\n",
             _display.isLvglTouchReady() ? "ready" : "disabled");
     }
 
