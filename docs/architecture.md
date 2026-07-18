@@ -34,9 +34,11 @@ command progress into simple flags for the future GUI. LVGL widgets should use
 this model instead of implementing their own permission rules.
 
 `ScreenPowerPolicy` tracks the screen power state independently from pool
-status and commands. It decides when the display is awake, dimmed, or off and
-whether a touch should be forwarded to the GUI. A touch from dimmed or off only
-wakes the screen, so an accidental first tap cannot trigger a pool command.
+status and commands. It supports optional dimming and decides whether a touch
+should be forwarded to the GUI. Dimming is disabled for the Waveshare 4B after
+hardware tests showed visible PWM flicker; it remains fully lit until the
+five-minute black/off transition. A touch from off only wakes the screen, so an
+accidental first tap cannot trigger a pool command.
 
 `OtaManager` handles optional password-protected firmware updates. OTA is
 disabled by default and starts only after Wi-Fi is connected and a non-empty

@@ -12,7 +12,7 @@ namespace
     constexpr int I2C_SCL = 48;
     constexpr int LCD_BACKLIGHT = 4;
     constexpr uint8_t BACKLIGHT_RESOLUTION = 8;
-    constexpr uint32_t BACKLIGHT_FREQUENCY = 5000;
+    constexpr uint32_t BACKLIGHT_FREQUENCY = 20000;
 
     constexpr uint8_t GT911_PRIMARY_ADDRESS = 0x5D;
     constexpr uint8_t GT911_BACKUP_ADDRESS = 0x14;
@@ -69,11 +69,9 @@ bool DisplayManager::begin()
     Wire.begin(I2C_SDA, I2C_SCL);
     Wire.setClock(400000);
 
-    if (!ledcAttach(LCD_BACKLIGHT, BACKLIGHT_FREQUENCY, BACKLIGHT_RESOLUTION))
-    {
-        Serial.println("[Display] ERROR: backlight PWM attach failed");
-        return false;
-    }
+    pinMode(LCD_BACKLIGHT, OUTPUT);
+    digitalWrite(LCD_BACKLIGHT, HIGH);
+    _backlightReady = true;
     setBacklightPercent(0);
 
     if (!initDisplayHardware())
@@ -89,16 +87,7 @@ bool DisplayManager::begin()
         Serial.println("[Display] WARNING: GT911 unavailable; display remains active");
     }
 
-    display.fillScreen(WHITE);
-    display.setTextColor(RED);
-    display.setTextSize(3);
-    display.setCursor(24, 24);
-    display.println("Pool Control");
-    display.setTextColor(BLACK);
-    display.setTextSize(2);
-    display.println("Hardware integration OK");
-    display.println(_touchReady ? "GT911 touch ready" : "GT911 touch FAILED");
-    display.println("LVGL disabled");
+    drawDiagnosticScreen();
     setBacklightPercent(100);
 
     Serial.printf("[Display] ready; touch=%s, LVGL=disabled\n", _touchReady ? "ready" : "failed");
@@ -138,6 +127,7 @@ void DisplayManager::loop()
                     const uint16_t y = static_cast<uint16_t>(data[3] | (data[4] << 8));
                     const uint16_t strength = static_cast<uint16_t>(data[5] | (data[6] << 8));
                     Serial.printf("[Display] touch raw x=%u y=%u strength=%u\n", x, y, strength);
+                    _touchPressed = true;
                 }
                 _touchActive = true;
             }
@@ -151,15 +141,119 @@ void DisplayManager::loop()
     }
 }
 
+bool DisplayManager::consumeTouchPress()
+{
+    const bool pressed = _touchPressed;
+    _touchPressed = false;
+    return pressed;
+}
+
 void DisplayManager::setBacklightPercent(uint8_t percent)
 {
+    if (!_backlightReady)
+    {
+        return;
+    }
+
     if (percent > 100)
     {
         percent = 100;
     }
+
+    // Use unambiguous static levels at both endpoints. This mirrors the
+    // verified Waveshare bring-up and avoids LEDC's special full-duty values.
+    if (percent == 0 || percent == 100)
+    {
+        if (percent == 0 && _displayReady && !_screenBlanked)
+        {
+            display.fillScreen(BLACK);
+            _screenBlanked = true;
+            Serial.println("[Display] framebuffer blanked");
+        }
+        else if (percent == 100 && _displayReady && _screenBlanked)
+        {
+            // Restore the framebuffer while the backlight is still off so the
+            // user never sees an incomplete redraw during wake-up.
+            drawDiagnosticScreen();
+        }
+
+        if (_backlightPwmAttached)
+        {
+            ledcDetach(LCD_BACKLIGHT);
+            _backlightPwmAttached = false;
+            pinMode(LCD_BACKLIGHT, OUTPUT);
+        }
+
+        const uint8_t level = percent == 0 ? HIGH : LOW;
+        digitalWrite(LCD_BACKLIGHT, level);
+        Serial.printf(
+            "[Display] backlight target=%u%% gpio=%s readback=%u\n",
+            percent,
+            level == HIGH ? "HIGH" : "LOW",
+            digitalRead(LCD_BACKLIGHT));
+        return;
+    }
+
+    if (!ensureBacklightPwm())
+    {
+        return;
+    }
+
     const uint32_t maxDuty = (1UL << BACKLIGHT_RESOLUTION) - 1;
-    const uint32_t duty = maxDuty - (maxDuty * percent / 100);
-    ledcWrite(LCD_BACKLIGHT, duty);
+    const uint32_t duty = maxDuty * percent / 100;
+    if (!ledcWrite(LCD_BACKLIGHT, duty))
+    {
+        Serial.println("[Display] WARNING: backlight PWM write failed");
+        return;
+    }
+
+    // The hardware applies a new duty at the next PWM cycle. Waiting longer
+    // than one 20 kHz cycle makes the diagnostic readback deterministic.
+    delayMicroseconds(100);
+
+    Serial.printf(
+        "[Display] backlight target=%u%% duty=%lu readback=%lu\n",
+        percent,
+        static_cast<unsigned long>(duty),
+        static_cast<unsigned long>(ledcRead(LCD_BACKLIGHT)));
+}
+
+bool DisplayManager::ensureBacklightPwm()
+{
+    if (_backlightPwmAttached)
+    {
+        return true;
+    }
+
+    if (!ledcAttach(LCD_BACKLIGHT, BACKLIGHT_FREQUENCY, BACKLIGHT_RESOLUTION))
+    {
+        Serial.println("[Display] ERROR: backlight PWM attach failed");
+        return false;
+    }
+    if (!ledcOutputInvert(LCD_BACKLIGHT, true))
+    {
+        Serial.println("[Display] ERROR: backlight PWM inversion failed");
+        ledcDetach(LCD_BACKLIGHT);
+        return false;
+    }
+
+    _backlightPwmAttached = true;
+    return true;
+}
+
+void DisplayManager::drawDiagnosticScreen()
+{
+    display.fillScreen(WHITE);
+    display.setTextColor(RED);
+    display.setTextSize(3);
+    display.setCursor(24, 24);
+    display.println("Pool Control");
+    display.setTextColor(BLACK);
+    display.setTextSize(2);
+    display.println("Hardware integration OK");
+    display.println(_touchReady ? "GT911 touch ready" : "GT911 touch FAILED");
+    display.println("LVGL disabled");
+    _screenBlanked = false;
 }
 
 bool DisplayManager::initDisplayHardware()

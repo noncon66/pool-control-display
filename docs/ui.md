@@ -56,10 +56,9 @@ Heating is never shown as an operating mode.
 
 The wall display should not stay fully lit permanently.
 
-- After 60 seconds without touch input, the backlight is dimmed to a low level.
-- After 5 minutes without touch input, the backlight may be switched off.
-- A touch while dimmed or off wakes the display only and must not trigger a
-  pool command.
+- After 5 minutes without touch input, the framebuffer is cleared to black and
+  the backlight is switched off.
+- A touch while off wakes the display only and must not trigger a pool command.
 - Once awake, the next touch is handled normally.
 - The screen-power logic is independent from pool control. It changes only
   display brightness and touch forwarding, never `PoolState`.
@@ -87,9 +86,10 @@ The future LVGL screen reads `PanelViewModel` for control availability,
 warnings, and command progress. It must not duplicate permission rules or
 modify `PoolState` directly.
 
-Backlight and touch wake behavior should use `ScreenPowerPolicy`. Hardware
-drivers translate its brightness percentage to the real backlight PWM or
-enable pin.
+Backlight and touch wake behavior uses `ScreenPowerPolicy`. The policy retains
+optional dimming for other hardware, but dimming is disabled on the Waveshare
+4B because every tested PWM duty/frequency combination visibly flickered. This
+panel therefore uses only stable static GPIO levels for fully on and off.
 
 ## Current implementation status
 
@@ -97,8 +97,7 @@ The main-screen widget tree is implemented in `lib/Gui/GuiManager.cpp` using
 LVGL 8.4. It includes status cards, mode buttons, target-temperature controls,
 connection warnings, MQTT command callbacks, and command-progress feedback.
 
-The GUI is compiled but not started yet. `GuiManager::begin()` may only be
-called after the real display driver has initialized LVGL and registered a
-display. Display flush, touch input, backlight, and panel timing remain
-deliberately disabled until the Waveshare driver setup has been ported and
-tested on the delivered panel.
+The GUI is compiled but not started yet. ST7701 panel timing, GT911 raw touch,
+backlight, black/off behavior, and touch wake-up are integrated and verified on
+the delivered panel. `GuiManager::begin()` remains disabled until
+`DisplayManager` registers the LVGL display flush and touch input drivers.

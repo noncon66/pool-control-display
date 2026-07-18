@@ -3,49 +3,53 @@
 ## Aktuelles Ziel
 
 Das ESP32-S3-Pooldisplay als dünnen MQTT-Client für die über LoxBerry
-angebundene Loxone-Poolsteuerung fertigstellen. Display, Backlight und
-GT911-Touch sind jetzt in der normalen Firmware integriert und gemeinsam auf
-Hardware bestätigt. Als nächste Stufe folgt die Anbindung der vorhandenen
-`ScreenPowerPolicy`; LVGL und Bedienbefehle bleiben bis dahin deaktiviert.
+angebundene Loxone-Poolsteuerung fertigstellen. Display, Backlight,
+GT911-Touch und Screen-Off/Wake sind in der normalen Firmware integriert und
+auf Hardware bestätigt. Als Nächstes folgen LVGL-Display-Flush und
+LVGL-Touch-Input; MQTT-Bedienbefehle bleiben zunächst deaktiviert.
 
 ## Aktueller Git-Stand
 
-- Branch `main`, Ausgangscommit `0bfa87a`; Arbeitsbaum enthält die noch nicht
-  committete normale Hardwareintegration.
-- Geändert sind `platformio.ini`, `lib/Core/` und `lib/Display/`.
-- `lib/Network/` wurde wegen der Namenskollision mit Arduino Core 3.2.0 nach
-  `lib/PoolNetwork/` verschoben; öffentliche Header- und Klassennamen blieben
-  unverändert.
+- Branch `main`, Ausgangscommit `80ea39f` (`Hardware: Integrate display and
+  GT911 into main firmware`).
+- Arbeitsbaum enthält die noch nicht committete Screen-Power-Integration und
+  zugehörige Dokumentation.
+- Die normale Produktionsfirmware `esp32-s3-panel` ist auf `COM3` geflasht.
+  Das isolierte Power-Testziel befindet sich nicht mehr auf dem Gerät.
 
 ## Erledigte Änderungen
 
-- Der normale Build verwendet jetzt pioarduino `54.03.20` mit Arduino-ESP32
-  Core 3.2.0 und aktiviert USB CDC beim Boot.
-- Arduino_GFX 1.6.0 ist eine Abhängigkeit des normalen Ziels; die frühere
-  Ausklammerung von `lib/Display` wurde entfernt.
-- `DisplayManager` verwendet die am echten Waveshare
-  ESP32-S3-Touch-LCD-4B bestätigten ST7701-/RGB-Pins und Timings, TCA9554,
-  I2C GPIO 47/48, GT911 an `0x5D`/`0x14` und aktives-low Backlight-PWM an
-  GPIO 4.
-- Beim Start erscheint ein weißes Hardware-Diagnosebild mit rotem
-  `Pool Control` und schwarzem Status für Display, Touch und deaktiviertes
-  LVGL. Raw-Touch-Ereignisse werden seriell ausgegeben.
-- `AppController` startet und pollt `DisplayManager` vor bzw. neben den
-  bestehenden Wi-Fi-, MQTT- und OTA-Komponenten. `GuiManager` wird weiterhin
-  nicht initialisiert; Touch löst keine Steuerbefehle aus.
-- Die lokale Bibliothek heißt nun `PoolNetwork`, damit sie nicht mit der neuen
-  Framework-Bibliothek `Networking` kollidiert.
-- Weil die WiFi-Metadaten des Arduino Core 3.2.0 ihre Abhängigkeit zu
-  `Networking` nicht deklarieren, ergänzt das normale Ziel dessen Include-Pfad
-  portabel über PlatformIOs `$PROJECT_PACKAGES_DIR`.
+- `AppController` bindet `ScreenPowerPolicy` an `DisplayManager` und konsumiert
+  neue GT911-Press-Ereignisse genau einmal.
+- Der erste Touch aus Off weckt nur und wird nicht an Bedienelemente
+  weitergegeben. Bei wachem Display bleibt die GUI derzeit weiterhin aus.
+- `DisplayManager` setzt Backlight-Endpunkte ohne PWM: GPIO 4 HIGH = aus,
+  LOW = voll an. Gedimmte Zwischenwerte wären weiterhin per LEDC möglich.
+- Vor Off wird der RGB-Framebuffer schwarz gefüllt. Beim Wake-up wird das
+  Diagnosebild bei noch ausgeschaltetem Backlight wiederhergestellt und erst
+  danach beleuchtet; dadurch gibt es kein altes, flackerndes Restbild.
+- PWM-Dimmen ist für das Waveshare-4B-Panel deaktiviert. 2 %, 5 % und 10 % bei
+  5 kHz sowie 10 % bei 20 kHz und 100 kHz flackerten sichtbar. Das Panel bleibt
+  daher stabil bei 100 % und wechselt nach fünf Minuten direkt schwarz/aus.
+- Die hardwareunabhängige `ScreenPowerPolicy` behält optionales Dimmen über den
+  Konstruktor; bestehende Tests und andere Hardware können es weiter nutzen.
+- Die Power-Zeiten sind per Build-Makro konfigurierbar. Das nicht standardmäßig
+  ausgewählte Ziel `esp32-s3-power-test` verwendet 5/30 Sekunden für schnelle
+  Hardwaretests, das normale Ziel weiterhin 60 Sekunden/5 Minuten. Da Dimmen
+  am Panel deaktiviert ist, ist im normalen Betrieb nur die Off-Schwelle aktiv.
+- `docs/ui.md` und `docs/architecture.md` beschreiben die bestätigte
+  flackerfreie Strategie und den aktuellen LVGL-Stand.
 
 ## Offene Arbeit
 
-- `ScreenPowerPolicy` mit Backlight und Touch-Wakeup verbinden; Schlafen und
-  Aufwachen ohne Display-Neustart auf Hardware prüfen.
-- LVGL 8.4 aktivieren, Display-Flush und Touch-Input registrieren und den
-  vorhandenen Hauptbildschirm auf echter Hardware testen.
-- Danach MQTT/LoxBerry-End-to-End prüfen: retained Startzustand, stale/offline,
+- LVGL 8.4 initialisieren und den Arduino_GFX-Framebuffer als LVGL-Displayziel
+  anbinden; zuerst nur den vorhandenen Hauptbildschirm anzeigen.
+- GT911 als LVGL-Pointer registrieren. Der erste Touch aus Off muss weiterhin
+  ausschließlich wecken; erst der nächste Touch darf LVGL erreichen.
+- Danach den Hauptbildschirm auf echter Hardware auf Orientierung, Farben,
+  Aktualisierung und Touch-Zuordnung prüfen.
+- Erst anschließend MQTT-Bedienbefehle aktivieren und End-to-End gegen
+  LoxBerry/Loxone prüfen: retained Startzustand, stale/offline,
   Befehlsbestätigung, Timeout und Reconnect.
 - Native Tests erneut ausführen, sobald auf dem Windows-Host `gcc/g++` oder
   eine passende Native-Toolchain verfügbar ist.
@@ -53,58 +57,56 @@ Hardware bestätigt. Als nächste Stufe folgt die Anbindung der vorhandenen
 ## Wichtige technische Entscheidungen
 
 - Loxone bleibt alleiniger Controller. Das Panel zeigt bestätigte MQTT-Werte;
-  es gibt keine optimistischen UI-Updates.
+  keine optimistischen UI-Updates.
 - Statusmeldungen sind retained, Befehlstopics nicht. Unbekannte, stale oder
   offline Daten sperren die betroffenen Bedienelemente.
-- Hardwareintegration erfolgt weiterhin stufenweise: derzeit sind Display,
-  Backlight und reine Touch-Diagnose aktiv, LVGL und Bedienung bewusst aus.
-- Das offizielle Waveshare-BSP und die erfolgreichen isolierten Bring-ups sind
-  die Quelle für Pinbelegung, Timing, Resetfolge und Orientierung.
-- Die unveränderten GT911-Achsen wurden am realen Panel per Vier-Ecken-Test
-  bestätigt. Ein 150-ms-Inaktivitätsfallback erkennt Touch-Release.
-- Arduino_GFX ruft intern erneut `Wire.begin()` auf. Die daraus entstehende
-  Core-3.2-Warnung ist erwartet; die vorherige Initialisierung mit GPIO 47/48
-  bleibt notwendig.
+- Off bedeutet: Framebuffer schwarz, Backlight statisch aus, RGB-Panel und
+  GT911 bleiben initialisiert. So wacht das Gerät ohne Panel-Neustart auf.
+- PWM-Dimmen wird auf diesem konkreten Panel wegen nachgewiesenem Flackern nicht
+  eingesetzt. Stabilität hat Vorrang vor einer Zwischenhelligkeit.
+- Die unveränderten GT911-Achsen wurden per Vier-Ecken-Test bestätigt. Ein
+  150-ms-Inaktivitätsfallback erkennt Touch-Release.
+- Arduino_GFX ruft intern erneut `Wire.begin()` auf. Die Core-3.2-Warnung ist
+  erwartet; die vorherige Initialisierung mit GPIO 47/48 bleibt notwendig.
 - Private Gerätewerte liegen nur in der ignorierten `include/PoolConfig.h`.
 
 ## Relevante Dateien
 
 - `AGENTS.md`, `CODEX_HANDOFF.md` – Übergabeprozess und aktueller Stand
-- `platformio.ini` – Standard-, Native-Test- und isolierte Bring-up-Ziele
-- `lib/Display/DisplayManager.*` – ST7701, TCA9554, Backlight und GT911
-- `lib/Core/AppController.*` – Integration in die normale Firmware
-- `lib/PoolNetwork/` – Wi-Fi und OTA nach der Framework-Namenskollision
-- `lib/Pool/ScreenPowerPolicy.h`, `lib/Gui/` – nächste Integrationsstufen
-- `src/display_bringup.cpp`, `src/touch_bringup.cpp`,
-  `tools/display_bringup.py` – weiterhin verfügbare isolierte Diagnosen
+- `platformio.ini` – normales Ziel, Power-Test und isolierte Bring-ups
+- `lib/Pool/ScreenPowerPolicy.h` – Zeitlogik und optionales Dimmen
+- `lib/Display/DisplayManager.*` – ST7701, Backlight, Blackout und GT911
+- `lib/Core/AppController.*` – Screen-Power- und Wake-up-Integration
+- `lib/Gui/`, `docs/ui.md` – nächste LVGL-Integrationsstufe
 
 ## Tatsächlich ausgeführte Prüfungen
 
-- Mehrere normale Builds dienten der Migration; die ersten scheiterten an
-  fehlendem `Network.h`. Nach Umbenennung zu `PoolNetwork` und portablem
-  Framework-Include war `pio run -e esp32-s3-panel` erfolgreich: 51.916 Byte
-  RAM (15,8 %) und 1.031.694 Byte Flash (15,7 %).
-- `pio test -e native` wurde gestartet, konnte aber nicht gebaut werden, weil
-  auf dem Host weder `gcc` noch `g++` gefunden wurde. Es wurden daher keine
-  nativen Testfälle ausgeführt.
-- Die normale Firmware wurde erfolgreich auf den ESP32-S3 an `COM3` geladen;
-  Chip, 8 MB PSRAM und 16 MB Flash wurden erkannt, alle Images bestanden die
-  Hash-Prüfung.
-- Ein kontrollierter serieller RTS-Reset zeigte:
-  `ST7701 initialized`, GT911 Produkt `911` an `0x5D`, Konfiguration 79,
-  Auflösung `480x480`, `touch=ready, LVGL=disabled`.
-- Im selben Boot verband sich das Gerät mit Wi-Fi (`192.168.178.120`) und dem
-  MQTT-Broker; Abonnements wurden erfolgreich eingerichtet.
-- Der Benutzer bestätigte in der normalen Firmware den weißen Hintergrund,
-  das rote `Pool Control` sowie die schwarzen Meldungen
-  `Hardware integration OK`, `GT911 touch ready` und `LVGL disabled`.
-- Ein kurzer Tipp auf das laufende normale System wurde seriell als
-  `[Display] touch raw x=269 y=309 strength=18` erfasst.
-- Die früheren isolierten Display- und Touch-Bring-ups bleiben auf realer
-  Hardware bestätigt: sichtbares Testbild nach zwei Power-Cycles sowie
-  bestandener GT911-Vier-Ecken-Test ohne Achsentausch oder Spiegelung.
+- Screen-Power-Firmware mehrfach erfolgreich für das normale Ziel gebaut und
+  auf `COM3` geflasht; sämtliche Images bestanden die Hash-Prüfung.
+- ST7701, GT911 `911` an `0x5D` mit 480×480, Wi-Fi und MQTT liefen während der
+  Power-Tests weiter.
+- 60-Sekunden-/5-Minuten-Policyübergänge wurden seriell bestätigt. Der erste
+  Touch aus Dimmed/Off meldete `wake touch; control forwarding suppressed` und
+  weckte ohne Display-Neustart.
+- Reines Backlight-Off ließ das weiße Bild flackernd sichtbar. Nach zusätzlichem
+  `framebuffer blanked` bestätigte der Benutzer einen vollständig dunklen
+  Off-Zustand und korrektes, flackerfreies Touch-Wake-up.
+- PWM-Dimmversuche: 2 % flackerte deutlich, 5 % weniger, 10 % bei 5 kHz leicht,
+  20 kHz leicht hochfrequent und 100 kHz stärker/unregelmäßig. Der abschließende
+  Test ohne Dimm-PWM war bis zum direkten schwarzen Off flackerfrei.
+- Das isolierte 5-/30-Sekunden-Ziel ohne Dimmen meldete
+  `framebuffer blanked` und `power=off brightness=0%`; der Benutzer bestätigte
+  flackerfreies Off und Wake-up.
+- Das normale Ziel wurde danach neu gebaut: 51.932 Byte RAM (15,8 %) und
+  1.033.310 Byte Flash (15,8 %), erfolgreich auf `COM3` geladen und gestartet.
+  Der Boot-Log bestätigte `touch=ready`, IP `192.168.178.120` und MQTT verbunden.
+- `git diff --check` wurde während der Änderungen wiederholt erfolgreich
+  ausgeführt.
+- Native Tests wurden nicht erneut ausgeführt; der Host besitzt weiterhin kein
+  `gcc/g++`.
 
 ## Nächster konkreter Schritt
 
-`ScreenPowerPolicy` an Backlight und Touch-Wakeup anbinden und anschließend
-Schlafen sowie Aufwachen ohne Display-Neustart auf echter Hardware prüfen.
+LVGL-Display-Flush in `DisplayManager` integrieren und zunächst den vorhandenen
+Hauptbildschirm ohne Touch-Weitergabe oder MQTT-Befehle auf echter Hardware
+anzeigen. Danach GT911 schrittweise als LVGL-Pointer anbinden.

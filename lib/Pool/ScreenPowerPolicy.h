@@ -2,6 +2,14 @@
 
 #include <stdint.h>
 
+#ifndef SCREEN_POWER_DIM_AFTER_MS
+#define SCREEN_POWER_DIM_AFTER_MS 60000UL
+#endif
+
+#ifndef SCREEN_POWER_OFF_AFTER_MS
+#define SCREEN_POWER_OFF_AFTER_MS 300000UL
+#endif
+
 enum class ScreenPowerLevel : uint8_t
 {
     Awake,
@@ -14,12 +22,17 @@ enum class ScreenPowerLevel : uint8_t
 class ScreenPowerPolicy
 {
 public:
-    static constexpr uint32_t DIM_AFTER_MS = 60000;
-    static constexpr uint32_t OFF_AFTER_MS = 300000;
+    static constexpr uint32_t DIM_AFTER_MS = SCREEN_POWER_DIM_AFTER_MS;
+    static constexpr uint32_t OFF_AFTER_MS = SCREEN_POWER_OFF_AFTER_MS;
 
     static constexpr uint8_t AWAKE_BRIGHTNESS_PERCENT = 100;
     static constexpr uint8_t DIMMED_BRIGHTNESS_PERCENT = 10;
     static constexpr uint8_t OFF_BRIGHTNESS_PERCENT = 0;
+
+    explicit ScreenPowerPolicy(bool dimmingEnabled = true)
+        : _dimmingEnabled(dimmingEnabled)
+    {
+    }
 
     void begin(uint32_t now)
     {
@@ -34,7 +47,7 @@ public:
         {
             _level = ScreenPowerLevel::Off;
         }
-        else if (inactiveFor >= DIM_AFTER_MS)
+        else if (_dimmingEnabled && inactiveFor >= DIM_AFTER_MS)
         {
             _level = ScreenPowerLevel::Dimmed;
         }
@@ -77,6 +90,7 @@ public:
     }
 
 private:
+    bool _dimmingEnabled = true;
     uint32_t _lastActivityAt = 0;
     ScreenPowerLevel _level = ScreenPowerLevel::Awake;
 };

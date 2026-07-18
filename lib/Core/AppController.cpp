@@ -1,6 +1,24 @@
 #include "AppController.h"
 #include "PanelViewModel.h"
 
+namespace
+{
+    const char* screenPowerName(ScreenPowerLevel level)
+    {
+        switch (level)
+        {
+            case ScreenPowerLevel::Awake:
+                return "awake";
+            case ScreenPowerLevel::Dimmed:
+                return "dimmed";
+            case ScreenPowerLevel::Off:
+                return "off";
+            default:
+                return "unknown";
+        }
+    }
+}
+
 AppController::AppController()
     : _mqtt(_state)
 {
@@ -20,6 +38,7 @@ void AppController::begin()
     {
         Serial.println("[App] WARNING: display hardware initialization failed");
     }
+    _screenPower.begin(millis());
 
     // Zuerst WLAN initialisieren, danach den WLAN-Manager an MQTT übergeben.
     _wifi.begin();
@@ -40,6 +59,7 @@ void AppController::loop()
     _mqtt.loop();
     _ota.loop();
     _display.loop();
+    updateScreenPower(millis());
 
     // Verbindungszustände übernehmen und nur bei tatsächlichen Änderungen
     // eine Differenzausgabe erzeugen.
@@ -57,6 +77,32 @@ void AppController::loop()
 
     // Eine kurze Pause senkt die CPU-Last, ohne MQTT merklich auszubremsen.
     delay(10);
+}
+
+void AppController::updateScreenPower(uint32_t now)
+{
+    const ScreenPowerLevel previousLevel = _screenPower.level();
+
+    if (_display.consumeTouchPress())
+    {
+        const bool canForwardTouch = _screenPower.handleTouch(now);
+        Serial.println(canForwardTouch
+            ? "[Display] active touch; GUI disabled"
+            : "[Display] wake touch; control forwarding suppressed");
+    }
+
+    const ScreenPowerLevel newLevel = _screenPower.update(now);
+    if (newLevel == previousLevel)
+    {
+        return;
+    }
+
+    const uint8_t brightness = _screenPower.brightnessPercent();
+    _display.setBacklightPercent(brightness);
+    Serial.printf(
+        "[Display] power=%s brightness=%u%%\n",
+        screenPowerName(newLevel),
+        brightness);
 }
 
 void AppController::updateConnectivityState()

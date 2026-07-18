@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 #include "PoolState.h"
+#include "ScreenPowerPolicy.h"
 #include "WifiManager.h"
 #include "MqttManager.h"
 #include "OtaManager.h"
@@ -30,6 +31,9 @@ private:
     MqttManager _mqtt;
     OtaManager _ota;
     DisplayManager _display;
+    // PWM dimming visibly flickers on this panel across the tested duty/frequency
+    // range. Keep full brightness until the stable black/off transition.
+    ScreenPowerPolicy _screenPower{false};
     GuiManager _gui;
     SerialDashboard _dashboard;
 
@@ -38,6 +42,7 @@ private:
 
     // Diese Hilfsfunktionen werden nur innerhalb dieser Klasse verwendet.
     void updateConnectivityState();
+    void updateScreenPower(uint32_t now);
     void handleStateChanges();
     bool hasStateChanged() const;
 };
