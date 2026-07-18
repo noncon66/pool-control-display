@@ -7,9 +7,9 @@ enum class PoolMode : uint8_t
     // Diese Zahlenwerte müssen mit den von Loxone gesendeten Werten
     // übereinstimmen. Heizen ist kein Betriebsmodus, sondern wird separat über
     // PoolState::isHeating abgebildet.
-    Off = 0,
     Auto = 1,
-    Manual = 2
+    Manual = 2,
+    Off = 3
 };
 
 struct PoolState

@@ -17,7 +17,7 @@ and outputs is documented in [`loxone.md`](loxone.md).
 | `pool/status/heatingPump` | `0` / `1` | Heating pump state |
 | `pool/status/heatingAllowed` | `0` / `1` | Heating permission from heating system |
 | `pool/status/isHeating` | `0` / `1` | Pool is currently being heated |
-| `pool/status/mode` | `0..2` | Pool operating mode |
+| `pool/status/mode` | `1..3` | Pool operating mode |
 
 Status topics should be published as retained MQTT messages. This allows the
 display to receive the latest confirmed Loxone values immediately after a
@@ -27,15 +27,15 @@ Mode values:
 
 | Value | Meaning |
 |---:|---|
-| `0` | Off |
 | `1` | Automatic |
 | `2` | Manual |
+| `3` | Off |
 
 ## Command topics (published by the display / consumed by Loxone)
 
 | Topic | Payload | Meaning |
 |---|---:|---|
-| `pool/cmd/mode` | `0..2` | Set user-selectable pool mode |
+| `pool/cmd/mode` | `1..3` | Set user-selectable pool mode |
 | `pool/cmd/targetTemp` | float | Set target temperature |
 | `pool/cmd/filterPump` | `0` / `1` | Manually switch filter pump |
 

@@ -40,14 +40,14 @@ namespace MqttPayloadParser
 
         switch (payload[0])
         {
-            case '0':
-                result = PoolMode::Off;
-                return true;
             case '1':
                 result = PoolMode::Auto;
                 return true;
             case '2':
                 result = PoolMode::Manual;
+                return true;
+            case '3':
+                result = PoolMode::Off;
                 return true;
             default:
                 return false;

@@ -178,7 +178,7 @@ def handle_command(
             mode = int(payload)
         except ValueError:
             mode = -1
-        if mode in (0, 1, 2):
+        if mode in (1, 2, 3):
             state.mode = mode
             client.publish("pool/status/mode", str(mode))
         else:
@@ -355,6 +355,15 @@ def run_self_test(args: argparse.Namespace) -> None:
         panel.publish("pool/cmd/targetTemp", "30.0", retain=False)
         process_next_command(simulator, state)
         expect_status(panel, "pool/status/targetTemp", "30.0")
+
+        print("SELF-TEST: validating off mode and obsolete zero rejection")
+        panel.publish("pool/cmd/mode", "3", retain=False)
+        process_next_command(simulator, state)
+        expect_status(panel, "pool/status/mode", "3")
+
+        panel.publish("pool/cmd/mode", "0", retain=False)
+        process_next_command(simulator, state)
+        expect_no_publish(panel)
     finally:
         panel.close()
         simulator.close()
@@ -467,8 +476,8 @@ def main() -> int:
                     state.mode = 2
                     client.publish("pool/status/mode", "2")
                 elif key == "o":
-                    state.mode = 0
-                    client.publish("pool/status/mode", "0")
+                    state.mode = 3
+                    client.publish("pool/status/mode", "3")
                 elif key == "h":
                     state.is_heating = not state.is_heating
                     client.publish(

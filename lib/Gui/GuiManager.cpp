@@ -14,6 +14,11 @@ namespace
     constexpr uint32_t COLOR_MUTED = 0xA5A7AA;
     constexpr uint32_t COLOR_GREEN = 0x78BE20;
     constexpr uint32_t COLOR_DISABLED = 0x55585C;
+    constexpr PoolMode MODE_VALUES[] = {
+        PoolMode::Off,
+        PoolMode::Auto,
+        PoolMode::Manual
+    };
 
     void styleCard(lv_obj_t* object)
     {
@@ -107,7 +112,10 @@ void GuiManager::createScreen()
         _modeButtons[i] = lv_btn_create(screen);
         lv_obj_set_size(_modeButtons[i], 145, 52);
         lv_obj_set_pos(_modeButtons[i], 12 + i * 155, 264);
-        lv_obj_set_user_data(_modeButtons[i], reinterpret_cast<void*>(i));
+        lv_obj_set_user_data(
+            _modeButtons[i],
+            reinterpret_cast<void*>(
+                static_cast<intptr_t>(static_cast<uint8_t>(MODE_VALUES[i]))));
         lv_obj_add_event_cb(_modeButtons[i], onModeClicked, LV_EVENT_CLICKED, this);
         lv_obj_t* label = createLabel(_modeButtons[i], modeNames[i], lv_color_hex(COLOR_TEXT));
         lv_obj_center(label);
@@ -167,7 +175,7 @@ void GuiManager::update(uint32_t now)
     {
         lv_obj_set_style_bg_color(
             _modeButtons[i],
-            lv_color_hex(_state->hasMode && static_cast<int>(_state->mode) == i ? COLOR_GREEN : COLOR_CARD),
+            lv_color_hex(_state->hasMode && _state->mode == MODE_VALUES[i] ? COLOR_GREEN : COLOR_CARD),
             0);
     }
 }

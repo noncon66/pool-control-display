@@ -297,10 +297,16 @@ void test_mode_payload_requires_exact_supported_value()
         static_cast<uint8_t>(mode));
 
     TEST_ASSERT_FALSE(MqttPayloadParser::parseMode("10", mode));
-    TEST_ASSERT_FALSE(MqttPayloadParser::parseMode("3", mode));
+    TEST_ASSERT_FALSE(MqttPayloadParser::parseMode("0", mode));
     TEST_ASSERT_TRUE(MqttPayloadParser::parseMode("1", mode));
     TEST_ASSERT_EQUAL_UINT8(
         static_cast<uint8_t>(PoolMode::Auto),
+        static_cast<uint8_t>(mode));
+    TEST_ASSERT_TRUE(MqttPayloadParser::parseMode("2", mode));
+    TEST_ASSERT_EQUAL_UINT8(2, static_cast<uint8_t>(mode));
+    TEST_ASSERT_TRUE(MqttPayloadParser::parseMode("3", mode));
+    TEST_ASSERT_EQUAL_UINT8(
+        static_cast<uint8_t>(PoolMode::Off),
         static_cast<uint8_t>(mode));
 }
 

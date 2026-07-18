@@ -91,7 +91,7 @@ erraten.
 
 | MQTT-Topic | erwartete Bezeichnung | Typ | Payload |
 |---|---|---|---:|
-| `pool/cmd/mode` | `pool_cmd_mode` | analog | `0`, `1`, `2` |
+| `pool/cmd/mode` | `pool_cmd_mode` | analog | `1`, `2`, `3` |
 | `pool/cmd/targetTemp` | `pool_cmd_targetTemp` | analog | `20.0` bis `32.0` |
 | `pool/cmd/filterPump` | `pool_cmd_filterPump` | digital oder analog | `0`, `1` |
 
@@ -109,16 +109,16 @@ Verarbeitungsweg lautet immer:
 
 | Wert | Panelmodus |
 |---:|---|
-| `0` | Aus |
 | `1` | Automatik |
 | `2` | Manuell |
+| `3` | Aus |
 
-- Nur die exakten ganzzahligen Werte `0`, `1` und `2` akzeptieren.
+- Nur die exakten ganzzahligen Werte `1`, `2` und `3` akzeptieren.
 - Die Werte ausdrücklich auf die vorhandene Poollogik abbilden.
 - Der offizielle Loxone-Baustein `Poolsteuerung` verwendet am Eingang `Om`
-  `1 = Automatisch` und `2 = Service`. Panelmodus `0` darf daher nicht
-  ungeprüft als `Om = 0` interpretiert werden, sondern benötigt eine definierte
-  Aus-/Sperrlogik.
+  `1 = Automatisch` und `2 = Service`. Diese Werte entsprechen den Panelmodi
+  Automatik und Manuell. Panelmodus `3 = Aus` benötigt eine definierte
+  Aus-/Sperrlogik und darf nicht ungeprüft als `Om = 3` weitergereicht werden.
 - Erst den tatsächlich aktiven, auf das Panelmodell normalisierten Modus
   zurückmelden.
 

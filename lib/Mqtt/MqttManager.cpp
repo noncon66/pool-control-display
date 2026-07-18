@@ -83,7 +83,11 @@ bool MqttManager::sendMode(uint8_t mode)
     // Das ist Protokollprüfung und keine Poollogik: Gültige Betriebsmodi sind
     // ausschließlich Off, Auto und Manual. Der Heizstatus ist ein separates
     // boolesches Statusfeld und niemals ein Modusbefehl.
-    if (mode > static_cast<uint8_t>(PoolMode::Manual))
+    const bool validMode =
+        mode == static_cast<uint8_t>(PoolMode::Auto) ||
+        mode == static_cast<uint8_t>(PoolMode::Manual) ||
+        mode == static_cast<uint8_t>(PoolMode::Off);
+    if (!validMode)
     {
         Serial.printf("[MQTT] invalid mode command rejected: %u\n", mode);
         return false;
