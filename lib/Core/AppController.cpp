@@ -32,8 +32,8 @@ void AppController::begin()
     Serial.println("=== Pool Control Display ===");
     Serial.println("Starting application...");
 
-    // Hardware integration stage: display, backlight, and raw touch are active,
-    // while LVGL and control-event forwarding intentionally remain disabled.
+    // Display output and pointer input are active through LVGL. Productive
+    // control interaction remains disabled during touch bring-up.
     if (!_display.begin())
     {
         Serial.println("[App] WARNING: display hardware initialization failed");
@@ -44,6 +44,14 @@ void AppController::begin()
     _wifi.begin();
     _mqtt.begin(_wifi);
     _ota.begin(_wifi);
+
+    if (_display.isLvglReady())
+    {
+        _gui.begin(_state, _mqtt, false);
+        Serial.printf(
+            "[App] LVGL main screen initialized; touch=%s, MQTT controls=disabled\n",
+            _display.isLvglTouchReady() ? "ready" : "disabled");
+    }
 
     _dashboard.begin();
     _dashboard.renderFull(_state, _wifi, _mqtt);
@@ -67,6 +75,7 @@ void AppController::loop()
     handleStateChanges();
 
     const uint32_t now = millis();
+    _gui.update(now);
     // Die Subtraktion bleibt auch beim Überlauf von millis() korrekt, solange
     // uint32_t verwendet wird.
     if (now - _lastPeriodicDashboardUpdate >= 30000)
@@ -86,8 +95,12 @@ void AppController::updateScreenPower(uint32_t now)
     if (_display.consumeTouchPress())
     {
         const bool canForwardTouch = _screenPower.handleTouch(now);
+        if (!canForwardTouch)
+        {
+            _display.suppressCurrentTouchForLvgl();
+        }
         Serial.println(canForwardTouch
-            ? "[Display] active touch; GUI disabled"
+            ? "[Display] active touch; forwarded to LVGL"
             : "[Display] wake touch; control forwarding suppressed");
     }
 

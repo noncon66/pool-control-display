@@ -12,7 +12,7 @@ struct PoolState;
 class GuiManager
 {
 public:
-    void begin(PoolState& state, MqttManager& mqtt);
+    void begin(PoolState& state, MqttManager& mqtt, bool controlsEnabled = false);
     void update(uint32_t now);
     bool isInitialized() const { return _initialized; }
 
@@ -20,6 +20,7 @@ private:
     PoolState* _state = nullptr;
     MqttManager* _mqtt = nullptr;
     bool _initialized = false;
+    bool _controlsEnabled = false;
 
     lv_obj_t* _waterValue = nullptr;
     lv_obj_t* _heatingBadge = nullptr;

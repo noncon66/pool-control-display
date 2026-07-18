@@ -2,11 +2,14 @@
 
 #include <Arduino_GFX_Library.h>
 #include <Wire.h>
+#include <esp_heap_caps.h>
+#include <lvgl.h>
 
 namespace
 {
     constexpr uint16_t SCREEN_WIDTH = 480;
     constexpr uint16_t SCREEN_HEIGHT = 480;
+    constexpr uint16_t LVGL_BUFFER_ROWS = 40;
 
     constexpr int I2C_SDA = 47;
     constexpr int I2C_SCL = 48;
@@ -48,6 +51,24 @@ namespace
         st7701_type1_init_operations,
         sizeof(st7701_type1_init_operations));
 
+    lv_disp_draw_buf_t lvglDrawBuffer;
+    lv_color_t* lvglBuffer = nullptr;
+    lv_disp_t* lvglDisplay = nullptr;
+    DisplayManager* activeDisplayManager = nullptr;
+
+    void flushLvglDisplay(lv_disp_drv_t* driver, const lv_area_t* area, lv_color_t* colors)
+    {
+        const int32_t width = area->x2 - area->x1 + 1;
+        const int32_t height = area->y2 - area->y1 + 1;
+        display.draw16bitRGBBitmap(
+            area->x1,
+            area->y1,
+            reinterpret_cast<uint16_t*>(colors),
+            width,
+            height);
+        lv_disp_flush_ready(driver);
+    }
+
     void resetPanelAndTouch()
     {
         expander.pinMode(5, OUTPUT);
@@ -87,57 +108,80 @@ bool DisplayManager::begin()
         Serial.println("[Display] WARNING: GT911 unavailable; display remains active");
     }
 
-    drawDiagnosticScreen();
+    _lvglReady = initLvglDisplay();
+    _lvglTouchReady = _lvglReady && _touchReady && initLvglTouch();
+    if (_lvglReady)
+    {
+        display.fillScreen(BLACK);
+    }
+    else
+    {
+        Serial.println("[Display] WARNING: LVGL display unavailable; using diagnostic screen");
+        drawDiagnosticScreen();
+    }
     setBacklightPercent(100);
 
-    Serial.printf("[Display] ready; touch=%s, LVGL=disabled\n", _touchReady ? "ready" : "failed");
+    Serial.printf(
+        "[Display] ready; touch=%s, LVGL display=%s, LVGL input=%s\n",
+        _touchReady ? "ready" : "failed",
+        _lvglReady ? "ready" : "failed",
+        _lvglTouchReady ? "ready" : "disabled");
     return true;
 }
 
 void DisplayManager::loop()
 {
-    if (!_touchReady)
+    if (_touchReady)
     {
-        return;
-    }
+        uint8_t status = 0;
+        if (!readTouch(GT911_STATUS, &status, 1))
+        {
+            Serial.println("[Display] WARNING: GT911 status read failed");
+        }
+        else if ((status & 0x80) != 0)
+        {
+            const uint8_t points = status & 0x0F;
+            if (points == 0)
+            {
+                _touchActive = false;
+            }
+            else if (points <= 5)
+            {
+                uint8_t data[40] = {};
+                if (readTouch(GT911_FIRST_POINT, data, points * 8))
+                {
+                    _lastTouchEvent = millis();
+                    _touchX = static_cast<uint16_t>(data[1] | (data[2] << 8));
+                    _touchY = static_cast<uint16_t>(data[3] | (data[4] << 8));
+                    if (!_touchActive)
+                    {
+                        const uint16_t strength = static_cast<uint16_t>(data[5] | (data[6] << 8));
+                        Serial.printf(
+                            "[Display] touch raw x=%u y=%u strength=%u\n",
+                            _touchX,
+                            _touchY,
+                            strength);
+                        _touchPressed = true;
+                    }
+                    _touchActive = true;
+                }
+            }
+            writeTouch(GT911_STATUS, 0);
+        }
 
-    uint8_t status = 0;
-    if (!readTouch(GT911_STATUS, &status, 1))
-    {
-        Serial.println("[Display] WARNING: GT911 status read failed");
-        return;
-    }
-
-    if ((status & 0x80) != 0)
-    {
-        const uint8_t points = status & 0x0F;
-        if (points == 0)
+        if (_touchActive && millis() - _lastTouchEvent >= 150)
         {
             _touchActive = false;
         }
-        else if (points <= 5)
+        if (!_touchActive)
         {
-            uint8_t data[40] = {};
-            if (readTouch(GT911_FIRST_POINT, data, points * 8))
-            {
-                _lastTouchEvent = millis();
-                if (!_touchActive)
-                {
-                    const uint16_t x = static_cast<uint16_t>(data[1] | (data[2] << 8));
-                    const uint16_t y = static_cast<uint16_t>(data[3] | (data[4] << 8));
-                    const uint16_t strength = static_cast<uint16_t>(data[5] | (data[6] << 8));
-                    Serial.printf("[Display] touch raw x=%u y=%u strength=%u\n", x, y, strength);
-                    _touchPressed = true;
-                }
-                _touchActive = true;
-            }
+            _suppressLvglTouchUntilRelease = false;
         }
-        writeTouch(GT911_STATUS, 0);
     }
 
-    if (_touchActive && millis() - _lastTouchEvent >= 150)
+    if (_lvglReady && !_screenBlanked)
     {
-        _touchActive = false;
+        lv_timer_handler();
     }
 }
 
@@ -146,6 +190,11 @@ bool DisplayManager::consumeTouchPress()
     const bool pressed = _touchPressed;
     _touchPressed = false;
     return pressed;
+}
+
+void DisplayManager::suppressCurrentTouchForLvgl()
+{
+    _suppressLvglTouchUntilRelease = true;
 }
 
 void DisplayManager::setBacklightPercent(uint8_t percent)
@@ -174,7 +223,16 @@ void DisplayManager::setBacklightPercent(uint8_t percent)
         {
             // Restore the framebuffer while the backlight is still off so the
             // user never sees an incomplete redraw during wake-up.
-            drawDiagnosticScreen();
+            if (_lvglReady && lvglDisplay)
+            {
+                _screenBlanked = false;
+                lv_obj_invalidate(lv_scr_act());
+                lv_refr_now(lvglDisplay);
+            }
+            else
+            {
+                drawDiagnosticScreen();
+            }
         }
 
         if (_backlightPwmAttached)
@@ -239,6 +297,82 @@ bool DisplayManager::ensureBacklightPwm()
 
     _backlightPwmAttached = true;
     return true;
+}
+
+bool DisplayManager::initLvglDisplay()
+{
+    lv_init();
+
+    const size_t bufferPixels = SCREEN_WIDTH * LVGL_BUFFER_ROWS;
+    lvglBuffer = static_cast<lv_color_t*>(heap_caps_malloc(
+        bufferPixels * sizeof(lv_color_t),
+        MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
+    if (!lvglBuffer)
+    {
+        Serial.println("[Display] ERROR: LVGL draw buffer allocation failed");
+        return false;
+    }
+
+    lv_disp_draw_buf_init(&lvglDrawBuffer, lvglBuffer, nullptr, bufferPixels);
+
+    static lv_disp_drv_t driver;
+    lv_disp_drv_init(&driver);
+    driver.hor_res = SCREEN_WIDTH;
+    driver.ver_res = SCREEN_HEIGHT;
+    driver.flush_cb = flushLvglDisplay;
+    driver.draw_buf = &lvglDrawBuffer;
+
+    lvglDisplay = lv_disp_drv_register(&driver);
+    if (!lvglDisplay)
+    {
+        heap_caps_free(lvglBuffer);
+        lvglBuffer = nullptr;
+        Serial.println("[Display] ERROR: LVGL display registration failed");
+        return false;
+    }
+
+    Serial.printf(
+        "[Display] LVGL display ready; buffer=%u rows (%u bytes)\n",
+        LVGL_BUFFER_ROWS,
+        static_cast<unsigned int>(bufferPixels * sizeof(lv_color_t)));
+    return true;
+}
+
+bool DisplayManager::initLvglTouch()
+{
+    activeDisplayManager = this;
+
+    static lv_indev_drv_t driver;
+    lv_indev_drv_init(&driver);
+    driver.type = LV_INDEV_TYPE_POINTER;
+    driver.read_cb = readLvglTouch;
+
+    if (!lv_indev_drv_register(&driver))
+    {
+        activeDisplayManager = nullptr;
+        Serial.println("[Display] ERROR: LVGL touch registration failed");
+        return false;
+    }
+
+    Serial.println("[Display] LVGL touch ready; MQTT controls disabled");
+    return true;
+}
+
+void DisplayManager::readLvglTouch(lv_indev_drv_t*, lv_indev_data_t* data)
+{
+    if (!activeDisplayManager)
+    {
+        data->state = LV_INDEV_STATE_RELEASED;
+        return;
+    }
+
+    data->point.x = activeDisplayManager->_touchX;
+    data->point.y = activeDisplayManager->_touchY;
+    data->state = activeDisplayManager->_touchActive &&
+                  !activeDisplayManager->_screenBlanked &&
+                  !activeDisplayManager->_suppressLvglTouchUntilRelease
+        ? LV_INDEV_STATE_PRESSED
+        : LV_INDEV_STATE_RELEASED;
 }
 
 void DisplayManager::drawDiagnosticScreen()

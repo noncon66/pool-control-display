@@ -40,10 +40,11 @@ namespace
     }
 }
 
-void GuiManager::begin(PoolState& state, MqttManager& mqtt)
+void GuiManager::begin(PoolState& state, MqttManager& mqtt, bool controlsEnabled)
 {
     _state = &state;
     _mqtt = &mqtt;
+    _controlsEnabled = controlsEnabled;
     createScreen();
     _initialized = true;
     update(millis());
@@ -173,10 +174,17 @@ void GuiManager::update(uint32_t now)
 
 void GuiManager::applyView(const PanelViewModel& view)
 {
-    for (lv_obj_t* button : _modeButtons) setEnabled(button, view.modeControlEnabled);
-    setEnabled(_minusButton, view.targetTemperatureControlEnabled);
-    setEnabled(_plusButton, view.targetTemperatureControlEnabled);
-    setEnabled(_filterButton, view.filterPumpControlEnabled);
+    // During touch bring-up the buttons remain visually interactive while all
+    // callbacks are still blocked by _controlsEnabled. Once productive control
+    // is enabled, the normal offline/stale/unknown-data policy applies again.
+    const bool touchTestMode = !_controlsEnabled;
+    for (lv_obj_t* button : _modeButtons)
+    {
+        setEnabled(button, touchTestMode || view.modeControlEnabled);
+    }
+    setEnabled(_minusButton, touchTestMode || view.targetTemperatureControlEnabled);
+    setEnabled(_plusButton, touchTestMode || view.targetTemperatureControlEnabled);
+    setEnabled(_filterButton, touchTestMode || view.filterPumpControlEnabled);
 
     const bool commandTimedOut =
         view.modeCommand == CommandProgress::TimedOut ||
@@ -204,16 +212,30 @@ void GuiManager::onModeClicked(lv_event_t* event)
     auto* self = static_cast<GuiManager*>(lv_event_get_user_data(event));
     const intptr_t mode = reinterpret_cast<intptr_t>(
         lv_obj_get_user_data(lv_event_get_target(event)));
-    if (self && self->_mqtt) self->_mqtt->sendMode(static_cast<uint8_t>(mode));
+    if (!self || !self->_mqtt) return;
+    if (!self->_controlsEnabled)
+    {
+        Serial.printf("[GUI] mode touch=%d; MQTT control suppressed\n", static_cast<int>(mode));
+        return;
+    }
+    self->_mqtt->sendMode(static_cast<uint8_t>(mode));
 }
 
 void GuiManager::onTargetClicked(lv_event_t* event)
 {
     auto* self = static_cast<GuiManager*>(lv_event_get_user_data(event));
-    if (!self || !self->_mqtt || !self->_state || !self->_state->hasTargetTemperature) return;
+    if (!self || !self->_mqtt || !self->_state) return;
 
     const intptr_t direction = reinterpret_cast<intptr_t>(
         lv_obj_get_user_data(lv_event_get_target(event)));
+    if (!self->_controlsEnabled)
+    {
+        Serial.printf(
+            "[GUI] target touch=%s; MQTT control suppressed\n",
+            direction < 0 ? "minus" : "plus");
+        return;
+    }
+    if (!self->_state->hasTargetTemperature) return;
     const float requested = self->_state->targetTemperature +
         static_cast<float>(direction) * PanelControlPolicy::TARGET_TEMPERATURE_STEP;
     self->_mqtt->sendTargetTemperature(requested);
@@ -222,12 +244,18 @@ void GuiManager::onTargetClicked(lv_event_t* event)
 void GuiManager::onFilterPumpClicked(lv_event_t* event)
 {
     auto* self = static_cast<GuiManager*>(lv_event_get_user_data(event));
-    if (!self || !self->_mqtt || !self->_state || !self->_state->hasFilterPump)
+    if (!self || !self->_mqtt || !self->_state)
     {
         return;
     }
 
     // Das Panel sendet nur den gewünschten neuen Zustand. PoolState wird erst
     // durch die anschließende Bestätigung von Loxone geändert.
+    if (!self->_controlsEnabled)
+    {
+        Serial.println("[GUI] filter touch; MQTT control suppressed");
+        return;
+    }
+    if (!self->_state->hasFilterPump) return;
     self->_mqtt->sendFilterPump(!self->_state->filterPump);
 }

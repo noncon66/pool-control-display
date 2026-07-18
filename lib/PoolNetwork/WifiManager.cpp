@@ -7,6 +7,10 @@ void WifiManager::begin()
 {
     // WIFI_STA verbindet den ESP32 mit einem vorhandenen WLAN. Der ESP32
     // eröffnet dabei keinen eigenen Access Point.
+    // Reconnects must not rewrite Wi-Fi configuration in flash while the RGB
+    // panel continuously reads its framebuffer from PSRAM. Flash cache stalls
+    // can otherwise collide with the RGB DMA interrupt on ESP32-S3.
+    WiFi.persistent(false);
     WiFi.mode(WIFI_STA);
     connect();
 }
@@ -47,6 +51,7 @@ const char* WifiManager::ipAddress() const
 void WifiManager::connect()
 {
     // Zugangsdaten stehen in der lokalen, von Git ignorierten PoolConfig.h.
+    _lastReconnectAttempt = millis();
     Serial.printf("[WiFi] connecting to SSID '%s'\n", WIFI_SSID);
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 }
