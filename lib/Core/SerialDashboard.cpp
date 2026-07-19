@@ -22,7 +22,6 @@ void SerialDashboard::renderFull(const PoolState& state, const WifiManager& wifi
     Serial.printf("Filter pump     : %s\n", state.hasFilterPump ? (state.filterPump ? "ON" : "OFF") : "UNKNOWN");
     Serial.printf("Heating pump    : %s\n", state.hasHeatingPump ? (state.heatingPump ? "ON" : "OFF") : "UNKNOWN");
     Serial.printf("Heating allowed : %s\n", state.hasHeatingAllowed ? (state.heatingAllowed ? "YES" : "NO") : "UNKNOWN");
-    Serial.printf("Pool heating    : %s\n", state.hasIsHeating ? (state.isHeating ? "YES" : "NO") : "UNKNOWN");
     Serial.printf("Mode            : %s\n", state.hasMode ? modeToString(state.mode) : "UNKNOWN");
 
     Serial.printf("WiFi connected  : %s\n", wifi.isConnected() ? "YES" : "NO");
@@ -77,13 +76,6 @@ void SerialDashboard::renderDiff(const PoolState& oldState, const PoolState& new
     {
         Serial.printf("Heating allowed : %s\n",
             newState.hasHeatingAllowed ? (newState.heatingAllowed ? "YES" : "NO") : "UNKNOWN");
-    }
-
-    if (oldState.isHeating != newState.isHeating ||
-        oldState.hasIsHeating != newState.hasIsHeating)
-    {
-        Serial.printf("Pool heating    : %s\n",
-            newState.hasIsHeating ? (newState.isHeating ? "YES" : "NO") : "UNKNOWN");
     }
 
     if (oldState.mode != newState.mode ||

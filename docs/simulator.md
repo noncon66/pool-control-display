@@ -92,7 +92,6 @@ nicht in den Skripten oder im Repository gespeichert werden.
 - Die Solltemperatur wird nur im Automatikmodus angenommen.
 - Zulässige Solltemperatur: 20,0 bis 32,0 °C in Schritten von 0,5 °C.
 - Filterpumpenbefehle werden nur im manuellen Modus angenommen.
-- `isHeating` ist ein unabhängiger Status und kein Betriebsmodus.
 
 ## Tastaturbefehle
 
@@ -101,7 +100,6 @@ nicht in den Skripten oder im Repository gespeichert werden.
 | `A` | Automatikmodus veröffentlichen |
 | `M` | Manuellen Modus veröffentlichen |
 | `O` | Modus Aus veröffentlichen |
-| `H` | `isHeating` umschalten |
 | `F` | Filterpumpenstatus umschalten |
 | `P` | Alle Statuswerte erneut veröffentlichen |
 | `Q` | Simulator beenden |

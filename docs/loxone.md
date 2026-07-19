@@ -151,7 +151,7 @@ In Loxone Config einen virtuellen Ausgang für das MQTT Gateway anlegen:
 /dev/udp/IP_DES_LOXBERRY/11884
 ```
 
-Darunter virtuelle Ausgangsbefehle für die sieben Statustopics anlegen. Das
+Darunter virtuelle Ausgangsbefehle für die sechs Statustopics anlegen. Das
 LoxBerry-Schlüsselwort `retain` sorgt dafür, dass Mosquitto den letzten
 bestätigten Wert speichert.
 
@@ -180,7 +180,6 @@ Dasselbe Prinzip gilt für:
 ```text
 pool/status/heatingPump
 pool/status/heatingAllowed
-pool/status/isHeating
 ```
 
 ### Signalquellen
@@ -192,15 +191,11 @@ pool/status/isHeating
 | `pool/status/filterPump` | tatsächlicher Filterpumpenausgang |
 | `pool/status/heatingPump` | tatsächlicher Heizpumpenausgang |
 | `pool/status/heatingAllowed` | Freigabe der Heizungslogik |
-| `pool/status/isHeating` | tatsächlicher Heizbetrieb |
 | `pool/status/mode` | normalisierter, tatsächlich aktiver Panelmodus |
-
-`heatingAllowed` und `isHeating` sind unterschiedliche Informationen. Eine
-Heizfreigabe bedeutet nicht automatisch, dass der Pool gerade beheizt wird.
 
 ## Retain und Statusaktualisierung
 
-Alle sieben Statustopics müssen mit `retain` veröffentlicht werden. Die drei
+Alle sechs Statustopics müssen mit `retain` veröffentlicht werden. Die drei
 Befehlstopics dürfen niemals retained sein.
 
 Retain liefert dem Display nach Neustart oder MQTT-Reconnect sofort den letzten
@@ -260,7 +255,7 @@ mosquitto_pub -h IP_DES_LOXBERRY -u USER -P PASSWORD \
 Die Anbindung ist bereit für das Display, wenn:
 
 - alle Topicnamen und Payloadformate exakt [`mqtt.md`](mqtt.md) entsprechen,
-- alle sieben Statuswerte retained und bei tatsächlichen Änderungen erscheinen,
+- alle sechs Statuswerte retained und bei tatsächlichen Änderungen erscheinen,
 - ungültige oder unzulässige Befehle keine Anlagenänderung bewirken,
 - gültige Befehle innerhalb von fünf Sekunden durch den tatsächlichen Status
   bestätigt werden,

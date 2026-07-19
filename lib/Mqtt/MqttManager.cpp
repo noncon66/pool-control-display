@@ -251,7 +251,6 @@ void MqttManager::subscribeTopics()
     _client.subscribe(Topics::Status::FilterPump);
     _client.subscribe(Topics::Status::HeatingPump);
     _client.subscribe(Topics::Status::HeatingAllowed);
-    _client.subscribe(Topics::Status::IsHeating);
     _client.subscribe(Topics::Status::Mode);
 
     Serial.println("[MQTT] subscriptions complete");

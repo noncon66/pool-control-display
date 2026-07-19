@@ -130,7 +130,6 @@ class PoolSimulation:
     filter_pump: bool = False
     heating_pump: bool = False
     heating_allowed: bool = True
-    is_heating: bool = False
     mode: int = 1
 
 
@@ -154,7 +153,6 @@ def publish_all(client: MqttClient, state: PoolSimulation) -> None:
         "pool/status/heatingAllowed",
         boolean_payload(state.heating_allowed),
     )
-    client.publish("pool/status/isHeating", boolean_payload(state.is_heating))
     client.publish("pool/status/mode", str(state.mode))
 
 
@@ -298,7 +296,6 @@ def run_self_test(args: argparse.Namespace) -> None:
         "pool/status/filterPump": "0",
         "pool/status/heatingPump": "0",
         "pool/status/heatingAllowed": "1",
-        "pool/status/isHeating": "0",
         "pool/status/mode": "1",
     }
 
@@ -456,7 +453,7 @@ def main() -> int:
 
     print("\nLoxone MQTT simulator connected. Keys:")
     print("  A = Automatic mode    M = Manual mode    O = Off")
-    print("  H = Toggle isHeating  F = Toggle filter status")
+    print("  F = Toggle filter status")
     print("  P = Publish all       Q = Quit")
 
     last_ping = time.monotonic()
@@ -478,12 +475,6 @@ def main() -> int:
                 elif key == "o":
                     state.mode = 3
                     client.publish("pool/status/mode", "3")
-                elif key == "h":
-                    state.is_heating = not state.is_heating
-                    client.publish(
-                        "pool/status/isHeating",
-                        boolean_payload(state.is_heating),
-                    )
                 elif key == "f":
                     state.filter_pump = not state.filter_pump
                     client.publish(

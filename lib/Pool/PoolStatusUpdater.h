@@ -87,16 +87,6 @@ public:
             state.heatingAllowed = value;
             state.hasHeatingAllowed = true;
         }
-        else if (strcmp(topic, Topics::Status::IsHeating) == 0)
-        {
-            bool value = false;
-            if (!parseBool(payload, value))
-            {
-                return StatusUpdateResult::InvalidPayload;
-            }
-            state.isHeating = value;
-            state.hasIsHeating = true;
-        }
         else if (strcmp(topic, Topics::Status::Mode) == 0)
         {
             PoolMode value = PoolMode::Off;

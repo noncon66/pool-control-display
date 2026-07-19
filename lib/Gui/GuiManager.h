@@ -28,7 +28,6 @@ private:
     CommandProgress _lastTargetCommand = CommandProgress::Idle;
 
     lv_obj_t* _waterValue = nullptr;
-    lv_obj_t* _heatingBadge = nullptr;
     lv_obj_t* _filterButton = nullptr;
     lv_obj_t* _filterValue = nullptr;
     lv_obj_t* _heatingPumpValue = nullptr;

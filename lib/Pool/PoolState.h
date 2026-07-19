@@ -5,8 +5,7 @@
 enum class PoolMode : uint8_t
 {
     // Diese Zahlenwerte müssen mit den von Loxone gesendeten Werten
-    // übereinstimmen. Heizen ist kein Betriebsmodus, sondern wird separat über
-    // PoolState::isHeating abgebildet.
+    // übereinstimmen. Heizen ist kein eigener Betriebsmodus.
     Auto = 1,
     Manual = 2,
     Off = 3
@@ -26,7 +25,6 @@ struct PoolState
     bool filterPump = false;
     bool heatingPump = false;
     bool heatingAllowed = false;
-    bool isHeating = false;
 
     PoolMode mode = PoolMode::Off;
 
@@ -38,7 +36,6 @@ struct PoolState
     bool hasFilterPump = false;
     bool hasHeatingPump = false;
     bool hasHeatingAllowed = false;
-    bool hasIsHeating = false;
     bool hasMode = false;
 
     // Zeitpunkt der letzten gültigen Statusmeldung. Dieser gemeinsame
@@ -64,7 +61,6 @@ struct PoolState
                hasFilterPump ||
                hasHeatingPump ||
                hasHeatingAllowed ||
-               hasIsHeating ||
                hasMode;
     }
 

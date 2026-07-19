@@ -49,16 +49,16 @@ void test_freshness_handles_millis_wraparound()
     TEST_ASSERT_TRUE(state.isStatusFresh(999));
 }
 
-void test_heating_is_independent_from_operating_mode()
+void test_heating_pump_is_independent_from_operating_mode()
 {
     PoolState state;
     state.mode = PoolMode::Auto;
     state.hasMode = true;
-    state.isHeating = true;
-    state.hasIsHeating = true;
+    state.heatingPump = true;
+    state.hasHeatingPump = true;
 
     TEST_ASSERT_EQUAL_UINT8(1, static_cast<uint8_t>(state.mode));
-    TEST_ASSERT_TRUE(state.isHeating);
+    TEST_ASSERT_TRUE(state.heatingPump);
     TEST_ASSERT_TRUE(state.hasAnyStatus());
 }
 
@@ -123,8 +123,6 @@ void test_status_updater_applies_all_status_topics()
         state, commands, Topics::Status::HeatingPump, "true", now);
     PoolStatusUpdater::apply(
         state, commands, Topics::Status::HeatingAllowed, "0", now);
-    PoolStatusUpdater::apply(
-        state, commands, Topics::Status::IsHeating, "false", now);
     TEST_ASSERT_TRUE(state.filterPump);
     TEST_ASSERT_TRUE(state.hasFilterPump);
     TEST_ASSERT_EQUAL_UINT32(now, state.lastFilterPumpUpdateAt);
@@ -132,8 +130,6 @@ void test_status_updater_applies_all_status_topics()
     TEST_ASSERT_TRUE(state.hasHeatingPump);
     TEST_ASSERT_FALSE(state.heatingAllowed);
     TEST_ASSERT_TRUE(state.hasHeatingAllowed);
-    TEST_ASSERT_FALSE(state.isHeating);
-    TEST_ASSERT_TRUE(state.hasIsHeating);
 
     PoolStatusUpdater::apply(
         state, commands, Topics::Status::Mode, "2", now);
@@ -610,7 +606,7 @@ int main(int argc, char** argv)
     RUN_TEST(test_first_confirmed_value_makes_state_available);
     RUN_TEST(test_status_becomes_stale_after_timeout);
     RUN_TEST(test_freshness_handles_millis_wraparound);
-    RUN_TEST(test_heating_is_independent_from_operating_mode);
+    RUN_TEST(test_heating_pump_is_independent_from_operating_mode);
     RUN_TEST(test_manual_mode_must_be_confirmed_for_manual_control);
     RUN_TEST(test_invalid_float_payload_preserves_last_confirmed_value);
     RUN_TEST(test_valid_float_payload_is_applied);

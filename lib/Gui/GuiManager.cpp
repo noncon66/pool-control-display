@@ -77,8 +77,6 @@ void GuiManager::createScreen()
     _waterValue = createLabel(temperatureCard, "--,- C", lv_color_hex(COLOR_TEXT));
     lv_obj_set_style_text_font(_waterValue, &lv_font_montserrat_28, 0);
     lv_obj_align(_waterValue, LV_ALIGN_LEFT_MID, 8, 15);
-    _heatingBadge = createLabel(temperatureCard, "Heizung aktiv", lv_color_hex(COLOR_GREEN));
-    lv_obj_align(_heatingBadge, LV_ALIGN_RIGHT_MID, -8, 10);
 
     const char* statusNames[] = {"Filterpumpe", "Heizpumpe", "Heizfreigabe"};
     lv_obj_t** statusValues[] = {&_filterValue, &_heatingPumpValue, &_heatingAllowedValue};
@@ -171,8 +169,6 @@ void GuiManager::update(uint32_t now)
     lv_label_set_text(_filterValue, _state->hasFilterPump ? (_state->filterPump ? "EIN" : "AUS") : "--");
     lv_label_set_text(_heatingPumpValue, _state->hasHeatingPump ? (_state->heatingPump ? "EIN" : "AUS") : "--");
     lv_label_set_text(_heatingAllowedValue, _state->hasHeatingAllowed ? (_state->heatingAllowed ? "JA" : "NEIN") : "--");
-    if (_state->hasIsHeating && _state->isHeating) lv_obj_clear_flag(_heatingBadge, LV_OBJ_FLAG_HIDDEN);
-    else lv_obj_add_flag(_heatingBadge, LV_OBJ_FLAG_HIDDEN);
 
     for (int i = 0; i < 3; ++i)
     {

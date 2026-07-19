@@ -28,11 +28,10 @@ The main screen contains:
 
 1. Header with title and Wi-Fi/MQTT status
 2. Current water temperature
-3. Separate `isHeating` information
-4. Filter pump, heating pump, and heating permission status
-5. Operating modes: Off, Automatic, and Manual
-6. Target temperature with minus and plus buttons
-7. Connection or warning message
+3. Filter pump, heating pump, and heating permission status
+4. Operating modes: Off, Automatic, and Manual
+5. Target temperature with minus and plus buttons
+6. Connection or warning message
 
 Heating is never shown as an operating mode.
 

@@ -3,17 +3,19 @@
 ## Aktuelles Ziel
 
 Das ESP32-S3-Pooldisplay als dünnen MQTT-Client für die über LoxBerry
-angebundene Loxone-Poolsteuerung fertigstellen. Der Modusvertrag und der
-Befehlsweg sind korrigiert und bestätigt. Als Nächstes müssen die Loxone-
-Statuswerte regelmäßig retained publiziert werden, damit das Panel nicht nach
-60 Sekunden in den sicheren Stale-Zustand wechselt.
+angebundene Loxone-Poolsteuerung fertigstellen. Modus, Sollwert und
+Filterpumpenbedienung funktionieren end-to-end. Die Statuswerte für
+Filterpumpe, Heizpumpe und Heizfreigabe sind angebunden. Der nicht benötigte
+separate Status `isHeating` wurde aus dem Projekt entfernt.
 
 ## Aktueller Git-Stand
 
-- Branch `main`, aktueller Commit `9396b3b` (`MQTT: Align pool mode values with
-  Loxone`).
-- Vor dieser Handoff-Aktualisierung war der Arbeitsbaum sauber.
-- Die korrigierte Firmware ist auf `COM3` geflasht.
+- Branch `main`, aktueller Commit `43e0ca3` (`UI: Keep retained controls active
+  and fix target input`).
+- Der Arbeitsbaum enthält die noch nicht committete Entfernung von `isHeating`
+  sowie diese aktualisierte Übergabe.
+- Der vorherige Firmwarestand ist auf `COM3` geflasht; die aktuelle
+  `isHeating`-Bereinigung ist erfolgreich gebaut, aber noch nicht geflasht.
 - Kein Simulator- oder Hilfsprozess läuft.
 
 ## Erledigte Änderungen
@@ -38,12 +40,11 @@ Statuswerte regelmäßig retained publiziert werden, damit das Panel nicht nach
 
 ## Offene Arbeit
 
-- Loxone muss `pool/status/mode` spätestens alle 30 Sekunden retained erneut
-  publizieren; derzeit wird der Wert nach 60 Sekunden am Panel stale.
-- Die übrigen sechs tatsächlichen Zustände retained publizieren:
-  `waterTemp`, `targetTemp`, `filterPump`, `heatingPump`, `heatingAllowed` und
-  `isHeating` unter `pool/status/`.
-- Anschließend Rückbestätigung, Timeout, stale/offline und Reconnect testen.
+- `pool/status/waterTemp` retained anbinden und am Panel prüfen.
+- Heizpumpenstatus `0` bei der nächsten regulären Abschaltung kontrollieren.
+- Aktuelle Firmware flashen und die Anzeige ohne das entfernte Heiz-Badge kurz
+  auf der Hardware prüfen.
+- Anschließend Timeout, MQTT-offline und Reconnect abschließend testen.
 - Native Tests erneut ausführen, sobald `gcc/g++` auf dem Host verfügbar ist.
 
 ## Wichtige technische Entscheidungen
@@ -51,10 +52,13 @@ Statuswerte regelmäßig retained publiziert werden, damit das Panel nicht nach
 - Loxone bleibt alleiniger Controller. Das Panel übernimmt Commands erst nach
   einer bestätigenden Statusmeldung.
 - Statusmeldungen sind retained, Befehlstopics nicht.
-- Ohne frische Statusdaten bleiben produktive Controls gesperrt.
+- Bekannte retained Werte bleiben bei bestehender MQTT-Verbindung bedienbar;
+  unbekannte Werte und MQTT-offline sperren die betroffenen Controls.
 - `Disable Cache` stellt bei Modusbefehlen auch die Weiterleitung identischer
   Werte sicher, ohne einen ungültigen Resetwert `0` zu erzeugen.
 - Private Gerätewerte liegen nur in der ignorierten `include/PoolConfig.h`.
+- `isHeating` ist ohne eigenständiges Loxone-Signal redundant. Heizpumpe und
+  Heizfreigabe bleiben die beiden verbindlichen Heizstatuswerte.
 
 ## Relevante Dateien
 
@@ -189,10 +193,38 @@ Statuswerte regelmäßig retained publiziert werden, damit das Panel nicht nach
   schaltete über MQTT und Loxone wieder aus, die Rückmeldung wurde am Display
   korrekt angezeigt. Die Filterpumpensteuerung ist damit in beiden Richtungen
   vollständig geprüft; Abschlusszustand ist AUS.
+- Digitaler Loxone-Statusausgang für `pool/status/heatingPump` wurde vom
+  Benutzer eingerichtet. Eine anschließende read-only Brokerabfrage über fünf
+  Sekunden erhielt noch keine retained Meldung. Wahrscheinlich hat sich der
+  angeschlossene Heizpumpenausgang seit dem Konfigurationsdownload noch nicht
+  geändert und deshalb keinen EIN-/AUS-Befehl ausgelöst.
+- Nach kontrolliertem Auslösen durch den Benutzer wurde die read-only Abfrage
+  wiederholt und erhielt retained `pool/status/heatingPump = 1`. Der
+  Heizpumpen-Statusweg von Loxone bis zum Broker funktioniert. Der Benutzer
+  bestätigte sowohl die korrekte EIN-Anzeige am Panel als auch, dass der reale
+  EIN-Zustand beabsichtigt ist. Ein erzwungener AUS-Test wird deshalb vermieden
+  und bei der nächsten regulären Abschaltung nachgeholt.
+- Benutzer hat `pool/status/heatingAllowed` mit dem tatsächlichen
+  Heizfreigabesignal als digitalen retained Status angebunden und bestätigt,
+  dass die Integration funktioniert.
+- Nutzen von `pool/status/isHeating` geprüft: Der Wert steuert ausschließlich
+  das zusätzliche `HEIZT`-Badge in der GUI und beeinflusst weder Controls noch
+  Regelung. Da Loxone kein vom Heizpumpenstatus verschiedenes benötigtes Signal
+  liefert, wurde entschieden, den redundanten Status vollständig zu entfernen.
+- `isHeating` vollständig aus Topicvertrag, Subscription, Zustandsmodell,
+  Status-Updater, GUI/Badge, serieller Diagnose, Simulator, Tests und
+  Dokumentation entfernt. Der verbindliche Vertrag umfasst jetzt sechs
+  retained Statustopics.
+- Referenzsuche nach allen `isHeating`-Varianten ohne Treffer; Simulator-CLI
+  mit `--help` erfolgreich gestartet; `git diff --check` ohne Fehler.
+- Haupt-Firmwareziel `esp32-s3-panel` erfolgreich gebaut: RAM 31,3 %
+  (102532/327680 Bytes), Flash 19,0 % (1247550/6553600 Bytes). Der erste
+  Sandbox-Build scheiterte an Windows-Zugriffsfehler 5 im Compiler; derselbe
+  Build außerhalb der Sandbox war erfolgreich.
 - Native Tests nicht ausgeführt; dem Host fehlt `gcc/g++`.
 
 ## Nächster konkreter Schritt
 
-Als Nächstes den tatsächlichen Heizpumpenstatus über
-`pool/status/heatingPump` retained anbinden und dessen Anzeige am Panel prüfen;
-danach `heatingAllowed` und `isHeating` vervollständigen.
+Aktuelle Firmware auf `COM3` flashen und die bereinigte Anzeige auf der Hardware
+prüfen. Danach `pool/status/waterTemp` retained anbinden; Heizpumpenstatus `0`
+bei der nächsten regulären Abschaltung kontrollieren.

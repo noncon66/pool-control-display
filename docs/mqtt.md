@@ -16,7 +16,6 @@ and outputs is documented in [`loxone.md`](loxone.md).
 | `pool/status/filterPump` | `0` / `1` | Filter pump state |
 | `pool/status/heatingPump` | `0` / `1` | Heating pump state |
 | `pool/status/heatingAllowed` | `0` / `1` | Heating permission from heating system |
-| `pool/status/isHeating` | `0` / `1` | Pool is currently being heated |
 | `pool/status/mode` | `1..3` | Pool operating mode |
 
 Status topics should be published as retained MQTT messages. This allows the
@@ -44,8 +43,8 @@ specific moment, not a persistent state. Loxone validates and processes the
 request, then publishes the resulting confirmed value on the matching status
 topic.
 
-Heating is not an operating mode. Loxone publishes it independently on
-`pool/status/isHeating`; the display only presents that information.
+Heating is not an operating mode. The display presents the confirmed heating
+pump and heating-permission states independently from the operating mode.
 
 ## Filter pump command
 
