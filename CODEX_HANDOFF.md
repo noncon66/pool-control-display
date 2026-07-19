@@ -10,12 +10,10 @@ separate Status `isHeating` wurde aus dem Projekt entfernt.
 
 ## Aktueller Git-Stand
 
-- Branch `main`, aktueller Commit `43e0ca3` (`UI: Keep retained controls active
-  and fix target input`).
-- Der Arbeitsbaum enthält die noch nicht committete Entfernung von `isHeating`
-  sowie diese aktualisierte Übergabe.
-- Der vorherige Firmwarestand ist auf `COM3` geflasht; die aktuelle
-  `isHeating`-Bereinigung ist erfolgreich gebaut, aber noch nicht geflasht.
+- Branch `main`, aktueller Commit `b5e9159` (`MQTT: Remove redundant isHeating
+  status`).
+- Vor dieser Handoff-Aktualisierung war der Arbeitsbaum sauber.
+- Die aktuelle Firmware ohne `isHeating` ist auf `COM3` geflasht.
 - Kein Simulator- oder Hilfsprozess läuft.
 
 ## Erledigte Änderungen
@@ -40,10 +38,48 @@ separate Status `isHeating` wurde aus dem Projekt entfernt.
 
 ## Offene Arbeit
 
-- `pool/status/waterTemp` retained anbinden und am Panel prüfen.
 - Heizpumpenstatus `0` bei der nächsten regulären Abschaltung kontrollieren.
-- Aktuelle Firmware flashen und die Anzeige ohne das entfernte Heiz-Badge kurz
-  auf der Hardware prüfen.
+- Ursache der früheren Schwankungen von `pool/status/targetTemp` prüfen und
+  sicherstellen, dass Loxone den stabilen tatsächlich aktiven Sollwert sendet.
+- GUI später überarbeiten, derzeit auf ausdrücklichen Benutzerwunsch noch
+  nicht ändern: Plus-/Minus-Schaltflächen sind als blaue Flächen sichtbar,
+  ihre Zeichen aber kaum erkennbar; mehrere Beschriftungen sind für den realen
+  Betrachtungsabstand zu klein.
+- Benutzer lieferte zwei Screenshots der aktuellen Loxone-App als spätere
+  visuelle Referenz. Relevante Merkmale: große Primärwerte und Beschriftungen,
+  sehr deutliche Plus-/Minus-Glyphen, ruhige dunkle Karten, großzügige Abstände
+  und klar hervorgehobene aktive Zustände. Die Display-GUI soll diese
+  Prinzipien nutzen, aber ihre kompakte Dashboard-Struktur behalten und weder
+  Loxone-Branding noch App-Screens direkt kopieren.
+- Verbindliche GUI-Vorgabe des Benutzers: Das aktuelle Display-Layout und die
+  Anordnung der Bereiche bleiben erhalten. Die Filterpumpen-Kachel muss bei der
+  späteren visuellen Überarbeitung eindeutig als bedienbarer Button erkennbar
+  werden; derzeit wirkt sie wie die benachbarten reinen Statuskarten für
+  Heizpumpe und Heizfreigabe. Noch keine Umsetzung gewünscht.
+- Auf anschließenden Benutzerwunsch wurde ein interaktiver visueller Entwurf
+  außerhalb des Firmwareprojekts erstellt. Er behält das bestehende Layout,
+  vergrößert die Typografie und Plus-/Minus-Zeichen und kennzeichnet die
+  Filterpumpen-Kachel durch Power-Symbol und sichtbaren Schalthinweis eindeutig
+  als Button. Der Entwurf ändert lokal nur seinen simulierten Zustand.
+- Auf Benutzerwunsch wurde zusätzlich eine konsequent dunkle Variante des
+  interaktiven Entwurfs erstellt. Layout, größere Typografie, klar sichtbare
+  Plus-/Minus-Zeichen und Button-Kennzeichnung der Filterpumpe bleiben gleich.
+- Eine weitere dunkle Entwurfsvariante verwendet auf Benutzerwunsch deutlich
+  mehr Loxone-inspiriertes Grün: aktiver Modus, Verbindungsanzeigen,
+  Statuswerte, Filterpumpen-Affordance sowie Plus/Minus sind stärker akzentuiert.
+- Benutzer gefielen die grün umrandeten Plus-/Minus-Tasten nicht. Eine neue
+  Variante stellt sie deshalb wie in der gelieferten Loxone-Referenz als ruhige
+  dunkle Tasten mit großen hellen Zeichen dar; die übrigen grünen Akzente und
+  das unveränderte Layout bleiben erhalten.
+- Im nächsten Entwurf wurde die Wassertemperatur deutlich kompakter und
+  horizontal angeordnet. Der frei gewordene Platz wurde auf ausdrücklichen
+  Benutzerwunsch überwiegend dem Betriebsmodus gegeben; dessen Tasten sind nun
+  höher und die Beschriftung größer. Der Solltemperaturbereich bleibt kompakt.
+- Der Benutzer hat diesen letzten Entwurf als verbindlichen GUI-Zwischenstand
+  für die Fortsetzung am nächsten Tag festgelegt. Referenz:
+  `pool-control-gui-balanced-draft.html` im threadbezogenen
+  Visualisierungsverzeichnis. Noch nicht in die Firmware übernehmen, bis die
+  gemeinsame GUI-Abstimmung fortgesetzt wird.
 - Anschließend Timeout, MQTT-offline und Reconnect abschließend testen.
 - Native Tests erneut ausführen, sobald `gcc/g++` auf dem Host verfügbar ist.
 
@@ -221,10 +257,40 @@ separate Status `isHeating` wurde aus dem Projekt entfernt.
   (102532/327680 Bytes), Flash 19,0 % (1247550/6553600 Bytes). Der erste
   Sandbox-Build scheiterte an Windows-Zugriffsfehler 5 im Compiler; derselbe
   Build außerhalb der Sandbox war erfolgreich.
+- Aktuelles Haupt-Firmwareziel anschließend erfolgreich auf `COM3` geladen;
+  Bootloader, Partitionen und Firmware wurden geschrieben, alle Flash-Hashes
+  verifiziert und das Board per RTS neu gestartet.
+- Benutzer bestätigte nach dem Neustart die normale Oberfläche und dass das
+  entfernte zusätzliche Heiz-Badge nicht mehr angezeigt wird. Die
+  `isHeating`-Bereinigung ist damit auch auf der Hardware verifiziert.
+- Benutzer hat `pool/status/waterTemp` mit dem tatsächlichen Messwert als
+  analogen retained Status angebunden und die korrekte Anzeige bestätigt.
+  Read-only Brokerprüfung erhielt retained `pool/status/waterTemp = 26.8`;
+  Topic, Payload und Rückweg zum Panel sind damit verifiziert.
+- Hardwarefoto der aktuellen GUI bewertet: Gesamtaufteilung funktioniert,
+  aber Plus/Minus haben unzureichende Zeichensichtbarkeit und die Schriften
+  sind teilweise zu klein. Noch keine Codeänderung vorgenommen.
+- Zwei Loxone-App-Screens als Referenz bewertet; ebenfalls keine GUI-
+  Codeänderung vorgenommen.
+- Weiteres Hardwarefoto bewertet und Layout-Erhalt sowie bessere visuelle
+  Bedienkennzeichnung der Filterpumpen-Kachel dokumentiert; kein Code geändert.
+- Interaktiver GUI-Entwurf unter dem threadbezogenen Visualisierungsverzeichnis
+  erstellt und erfolgreich als vollständige Vorschau gerendert; weiterhin
+  keine Firmware- oder Projekt-GUI-Datei geändert.
+- Dunkle Entwurfsvariante ebenfalls erfolgreich als vollständige Vorschau
+  gerendert; weiterhin keine Firmwareänderung.
+- Dunkle Variante mit verstärkten grünen Akzenten ebenfalls erfolgreich als
+  vollständige Vorschau gerendert; weiterhin keine Firmwareänderung.
+- Überarbeitete Variante mit neutralen Plus-/Minus-Tasten ebenfalls erfolgreich
+  gerendert; weiterhin keine Firmwareänderung.
+- Variante mit kompakter Wassertemperatur und deutlich mehr Platz für den
+  Betriebsmodus erfolgreich gerendert; weiterhin keine Firmwareänderung.
 - Native Tests nicht ausgeführt; dem Host fehlt `gcc/g++`.
 
 ## Nächster konkreter Schritt
 
-Aktuelle Firmware auf `COM3` flashen und die bereinigte Anzeige auf der Hardware
-prüfen. Danach `pool/status/waterTemp` retained anbinden; Heizpumpenstatus `0`
-bei der nächsten regulären Abschaltung kontrollieren.
+Am nächsten Tag die GUI-Abstimmung auf Basis von
+`pool-control-gui-balanced-draft.html` fortsetzen; der Entwurf ist noch nicht in
+die Firmware zu übernehmen. Danach Stabilität und korrekte Quelle von
+`pool/status/targetTemp`, Timeout, MQTT-offline und Reconnect prüfen;
+Heizpumpenstatus `0` bei der nächsten regulären Abschaltung kontrollieren.
