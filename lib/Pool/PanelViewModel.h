@@ -14,7 +14,6 @@ struct PanelViewModel
     bool hasData = false;
     bool dataIsCurrent = false;
     bool showOfflineWarning = true;
-    bool showStaleDataWarning = false;
 
     bool modeControlEnabled = false;
     bool targetTemperatureControlEnabled = false;
@@ -33,9 +32,11 @@ struct PanelViewModel
         PanelViewModel view;
 
         view.hasData = state.hasAnyStatus();
-        view.dataIsCurrent = state.isStatusFresh(now);
+        // Retained status values are the last values confirmed by Loxone. They
+        // remain usable while the MQTT transport is connected; individual
+        // age limits are diagnostic only and no longer block controls.
+        view.dataIsCurrent = mqttConnected && view.hasData;
         view.showOfflineWarning = !mqttConnected;
-        view.showStaleDataWarning = view.hasData && !view.dataIsCurrent;
 
         view.modeControlEnabled =
             PanelControlPolicy::canSelectMode(state, mqttConnected, now) &&

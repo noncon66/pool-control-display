@@ -198,28 +198,20 @@ pool/status/isHeating
 `heatingAllowed` und `isHeating` sind unterschiedliche Informationen. Eine
 Heizfreigabe bedeutet nicht automatisch, dass der Pool gerade beheizt wird.
 
-## Retain und zyklische Aktualisierung
+## Retain und Statusaktualisierung
 
 Alle sieben Statustopics müssen mit `retain` veröffentlicht werden. Die drei
 Befehlstopics dürfen niemals retained sein.
 
-Retain liefert nach einem Neustart sofort den letzten Zustand, beweist aber
-nicht, dass Loxone weiterhin erreichbar ist. Die Firmware betrachtet Daten
-nach 60 Sekunden ohne gültige Statusmeldung als veraltet. Loxone sollte deshalb
-spätestens alle 30 Sekunden alle sieben Statuswerte erneut veröffentlichen.
+Retain liefert dem Display nach Neustart oder MQTT-Reconnect sofort den letzten
+von Loxone bestätigten Zustand. Loxone muss einen Status bei tatsächlichen
+Änderungen publizieren; eine zyklische Wiederholung ist nicht erforderlich.
 
-Besonders wichtig sind die eigenen Frischezeitstempel von:
-
-- `pool/status/mode`
-- `pool/status/targetTemp`
-- `pool/status/filterPump`
-
-Von ihnen hängen die Bedienfreigaben ab. Eine zyklische Wiederholung nur der
-Wassertemperatur würde diese drei Werte nicht aktuell halten.
-
-Die konkrete 30-Sekunden-Triggerlogik hängt von der bestehenden Loxone-
-Programmierung ab. Sie muss dieselben tatsächlichen Statussignale verwenden wie
-die ereignisgesteuerten Publishes.
+Das Display verwendet einen bekannten retained Wert, solange MQTT verbunden
+ist. Fällt nur Loxone aus, während Broker und Display verbunden bleiben, kann
+ein Bedienwunsch noch gesendet werden. Ohne passende Statusantwort verändert
+das Display seinen Zustand nicht und zeigt nach fünf Sekunden einen Timeout.
+Loxone bleibt für Validierung, Verriegelungen und reale Ausgänge verantwortlich.
 
 ## Broker- und Netzwerksicherheit
 
@@ -247,8 +239,8 @@ Die ersten Tests bei gesperrten oder simulierten Poolaktoren durchführen.
    zugestellt wird.
 8. Alle gültigen und ungültigen Befehlsfälle prüfen.
 9. Broker und Miniserver neu starten und den Wiederanlauf prüfen.
-10. Kontrollieren, dass die zyklischen Statuswerte spätestens alle 30 Sekunden
-    erscheinen.
+10. Nach einem Display- oder Broker-Neustart kontrollieren, dass alle letzten
+    Statuswerte sofort retained zugestellt werden.
 
 Zum Beobachten aller Pooltopics:
 
@@ -268,9 +260,10 @@ mosquitto_pub -h IP_DES_LOXBERRY -u USER -P PASSWORD \
 Die Anbindung ist bereit für das Display, wenn:
 
 - alle Topicnamen und Payloadformate exakt [`mqtt.md`](mqtt.md) entsprechen,
-- alle sieben Statuswerte retained und mindestens alle 30 Sekunden erscheinen,
+- alle sieben Statuswerte retained und bei tatsächlichen Änderungen erscheinen,
 - ungültige oder unzulässige Befehle keine Anlagenänderung bewirken,
 - gültige Befehle innerhalb von fünf Sekunden durch den tatsächlichen Status
   bestätigt werden,
-- ein Loxone- oder Brokerausfall die Bedienung deaktiviert,
+- ein Brokerausfall die Bedienung deaktiviert und ein Loxone-Ausfall zu einem
+  Bestätigungs-Timeout führt,
 - Loxone auch ohne Display vollständig und sicher weiterarbeitet.

@@ -3,148 +3,161 @@
 ## Aktuelles Ziel
 
 Das ESP32-S3-Pooldisplay als dünnen MQTT-Client für die über LoxBerry
-angebundene Loxone-Poolsteuerung fertigstellen. Die Betriebsmodus-Schnittstelle
-ist jetzt einheitlich auf `1 = Automatik`, `2 = Manuell`, `3 = Aus` korrigiert,
-gebaut und auf der Hardware bestätigt.
+angebundene Loxone-Poolsteuerung fertigstellen. Der Modusvertrag und der
+Befehlsweg sind korrigiert und bestätigt. Als Nächstes müssen die Loxone-
+Statuswerte regelmäßig retained publiziert werden, damit das Panel nicht nach
+60 Sekunden in den sicheren Stale-Zustand wechselt.
 
 ## Aktueller Git-Stand
 
-- Branch `main`, Ausgangscommit `067688f` (`Docs: Record successful LoxBerry
-  command routing tests`).
-- Änderungen an Firmware, Simulator, Tests, MQTT-/Loxone-Dokumentation und
-  dieser Übergabe sind noch nicht committet.
+- Branch `main`, aktueller Commit `9396b3b` (`MQTT: Align pool mode values with
+  Loxone`).
+- Vor dieser Handoff-Aktualisierung war der Arbeitsbaum sauber.
 - Die korrigierte Firmware ist auf `COM3` geflasht.
 - Kein Simulator- oder Hilfsprozess läuft.
-- Benutzer hat visuell bestätigt, dass bei Statuswert `3` der Button `AUS`
-  hervorgehoben wird.
-- Nach Neustart wurde `AUTOMATIK` getestet: Das Panel publizierte korrekt
-  `pool/cmd/mode = 1`, im seriellen Log jedoch zweimal. Noch klären, ob der
-  Benutzer einmal oder zweimal getippt hat.
-- Benutzer bestätigt, dass `mode = 1` über MQTT ankommt, aber von Loxone nicht
-  verarbeitet wird. Damit liegt der aktuelle Fehler hinter dem MQTT-Publish.
-- Loxone-LiveView blieb laut Benutzer auf `3`; der Displaywert `1` kam am
-  virtuellen Eingang nicht an. Ein identischer direkter Testpublish wurde
-  anschließend zum Vergleich gesendet und kam ebenfalls nicht in Loxone an.
-- Ein paralleler Broker-Subscriber empfing den Vergleichsbefehl exakt als
-  `pool/cmd/mode = 1`, `retain=false`. Display und Mosquitto sind damit als
-  Fehlerquelle ausgeschlossen; die Unterbrechung liegt im LoxBerry MQTT
-  Gateway oder dessen HTTP-Weiterleitung zum Miniserver.
-- Benutzer bestätigte danach, dass Payload `1` in der Incoming Overview des
-  Gateways sichtbar ist, der virtuelle Loxone-Eingang aber auf `3` bleibt.
-- Wahrscheinlichste Ursache laut offizieller LoxBerry-Dokumentation: Das
-  Gateway cached Werte und überträgt im Normalbetrieb nur Änderungen. Aus den
-  früheren Tests kann sein Cache bereits `1` enthalten, obwohl Loxones Eingang
-  inzwischen `3` zeigt. `Resend data to Miniserver` erzwingt die Übertragung.
-- Benutzer findet `Resend data to Miniserver` in seiner Gateway-Oberfläche
-  nicht; die dokumentierte Schaltfläche ist dort offenbar nicht vorhanden.
-- Mit Benutzerzustimmung wurde als Cache-Wechsel einmalig
-  `pool/cmd/mode = 2`, `retain=false`, erfolgreich an den Broker publiziert.
-  Benutzer bestätigte, dass der virtuelle Loxone-Eingang darauf auf `2`
-  wechselte. Damit sind Eingang, Authentifizierung und HTTP-Weiterleitung in
-  Ordnung; der unveränderte Gateway-Cachewert war die Ursache.
-- Anschließend wurde wie vereinbart `pool/cmd/mode = 1`, `retain=false`,
-  erfolgreich gesendet, um auf Automatik zurückzustellen. Benutzer bestätigte
-  den Wechsel des virtuellen Loxone-Eingangs zurück auf `1`.
-- Damit ist Display/Testclient → Mosquitto → LoxBerry Gateway → virtueller
-  Loxone-Eingang für echte Wertänderungen end-to-end bestätigt.
-- Benutzer möchte `Reset-After-Send` für robuste wiederholte Modusbefehle
-  einrichten und hat die Option für `pool/cmd/mode` aktiviert.
-- Erster Reset-After-Send-Test wurde mit `pool/cmd/mode = 2`, `retain=false`,
-  erfolgreich an den Broker gesendet. Der virtuelle Eingang blieb auf `2`;
-  ein Reset auf `0` erfolgte nicht.
-- Für absolute Modusbefehle ist die ebenfalls vorhandene Option `Disable Cache`
-  technisch besser als `Reset-After-Send`: Jeder identische Wert wird erneut
-  weitergeleitet, ohne den absichtlich ungültigen Wert `0` nachzusenden.
-- Benutzer hat `Reset-After-Send` ausgeschaltet und `Disable Cache` für
-  `pool/cmd/mode` aktiviert. Ein identischer Testwert `2` wurde danach erneut
-  erfolgreich an den Broker gesendet; Benutzer bestätigte im Gateway-Log den
-  erneuten HTTP-Versand an Loxone. Die Option funktioniert damit wie gewünscht.
-- Abschließend wurde `pool/cmd/mode = 1`, `retain=false`, gesendet, um wieder
-  auf Automatik zurückzustellen; Benutzer bestätigte den virtuellen Eingang
-  auf `1`.
-- Read-only Brokerprüfung bestätigte danach `pool/status/mode = 1` mit
-  Retain-Flag. Der Hardware-Serielltest zeigte `Mode : Auto` und zunächst
-  `Loxone data : CURRENT`.
-- Nach 60 Sekunden wurde der Modus wieder `STALE`, weil Loxone den Status noch
-  nicht zyklisch erneuert. Der Transport und die Zuordnung sind korrekt; es
-  fehlt die periodische Statusveröffentlichung.
 
 ## Erledigte Änderungen
 
-- `PoolMode`, MQTT-Payloadparser und Command-Validierung verwenden jetzt
-  ausschließlich die Loxone-Werte `1`, `2`, `3`.
-- Die UI-Reihenfolge bleibt `Aus`, `Automatik`, `Manuell`; Button-Payload und
-  Statushervorhebung verwenden eine explizite Zuordnung statt Arrayindex
-  `0..2`.
-- Simulator, Parser-Test und Dokumentation wurden auf dieselbe Zuordnung
-  umgestellt. Der Simulator-Selbsttest prüft zusätzlich `3 = Aus` und weist den
-  veralteten Wert `0` zurück.
-- LVGL-Hauptansicht, GT911-Pointer, Screen-Power, sichere Wake-Touch-Sperre und
-  policy-geschützte MQTT-Bedienung waren bereits integriert und auf Hardware
+- Verbindlicher Modusvertrag: `1 = Automatik`, `2 = Manuell`, `3 = Aus`; `0`
+  wird abgelehnt.
+- Enum, Parser, MQTT-Validierung, UI-Buttonwerte/-Hervorhebung, Simulator,
+  Tests und Dokumentation verwenden dieselbe Zuordnung.
+- Firmware erfolgreich gebaut, geflasht und auf dem Display geprüft.
+- Display/Testclient → Mosquitto → LoxBerry Gateway → virtueller Loxone-Eingang
+  funktioniert end-to-end.
+- Für `pool/cmd/mode` ist im Gateway `Disable Cache` aktiv und
+  `Reset-After-Send` aus. Ein wiederholter identischer Wert wurde laut
+  Gateway-Log erneut per HTTP an Loxone gesendet.
+- `pool/status/mode = 1` wurde retained vom Broker gelesen und vom Panel als
+  `Mode : Auto` ausgewertet. `AUS` bei Status `3` war zuvor ebenfalls visuell
   bestätigt.
-- LoxBerry leitet `pool/cmd/#` erfolgreich an virtuelle Loxone-Eingänge weiter.
+- Alle drei Displaybuttons sind end-to-end bestätigt: jeweils genau ein Touch
+  und ein nicht-retained Publish, danach Loxone-Status und Displaywechsel:
+  Automatik `1 → Auto`, Manuell `2 → Manual`, Aus `3 → Off`. Abschließend steht
+  die Anlage wieder auf Automatik.
 
 ## Offene Arbeit
 
-- Die drei Modusbuttons end-to-end prüfen: Automatik sendet `1`,
-  Manuell `2`, Aus `3`; Loxone muss jeweils den tatsächlichen Status retained
-  zurückmelden.
-- Für den Automatikbefehl kam noch kein `pool/status/mode = 1` zurück; der
-  bestätigte Zustand und die Hervorhebung blieben deshalb korrekt auf `Aus`.
-- Prüfen, ob der analoge virtuelle Eingang `pool_cmd_mode` noch den früheren
-  Testwert `1` hält. Ein erneutes `1` erzeugt dann keine Wertänderung und kann
-  eine flankengesteuerte Loxone-Logik nicht auslösen.
-- Die übrigen sechs tatsächlichen Zustände als retained Topics publizieren:
+- Loxone muss `pool/status/mode` spätestens alle 30 Sekunden retained erneut
+  publizieren; derzeit wird der Wert nach 60 Sekunden am Panel stale.
+- Die übrigen sechs tatsächlichen Zustände retained publizieren:
   `waterTemp`, `targetTemp`, `filterPump`, `heatingPump`, `heatingAllowed` und
   `isHeating` unter `pool/status/`.
-- Danach Rückbestätigung, Timeout, stale/offline und Reconnect end-to-end testen.
+- Anschließend Rückbestätigung, Timeout, stale/offline und Reconnect testen.
 - Native Tests erneut ausführen, sobald `gcc/g++` auf dem Host verfügbar ist.
 
 ## Wichtige technische Entscheidungen
 
-- Loxone bleibt alleiniger Controller. Das Panel zeigt keine optimistischen
-  Zustände; Commands gelten erst durch ein Statustopic als bestätigt.
+- Loxone bleibt alleiniger Controller. Das Panel übernimmt Commands erst nach
+  einer bestätigenden Statusmeldung.
 - Statusmeldungen sind retained, Befehlstopics nicht.
-- `1 = Automatik`, `2 = Manuell`, `3 = Aus` ist der verbindliche Modevertrag.
 - Ohne frische Statusdaten bleiben produktive Controls gesperrt.
+- `Disable Cache` stellt bei Modusbefehlen auch die Weiterleitung identischer
+  Werte sicher, ohne einen ungültigen Resetwert `0` zu erzeugen.
 - Private Gerätewerte liegen nur in der ignorierten `include/PoolConfig.h`.
 
 ## Relevante Dateien
 
-- `lib/Pool/PoolState.h`, `lib/Pool/MqttPayloadParser.h` – Modevertrag/Parser
+- `lib/Pool/PoolState.h`, `lib/Pool/MqttPayloadParser.h` – Modusvertrag/Parser
 - `lib/Gui/GuiManager.cpp` – Buttonwerte und Statushervorhebung
 - `lib/Mqtt/MqttManager.cpp` – Command-Validierung und Publish
 - `tools/loxone_mqtt_simulator.py` – Broker-Integrationstest
-- `test/test_pool_state/test_main.cpp` – Parser-/Zustandstests
 - `docs/mqtt.md`, `docs/loxone.md` – verbindliche Integration
 
 ## Tatsächlich ausgeführte Prüfungen
 
-- Firmware-Releasebuild `esp32-s3-panel` erfolgreich: RAM 31,3 %, Flash 19,0 %.
-- Firmware erfolgreich auf `COM3` geladen; alle Flash-Hashes verifiziert.
-- Serieller Hardwaretest nach dem Flash: retained `pool/status/mode = 3` wurde
-  empfangen und als `Mode : Off` ausgegeben.
-- Benutzer bestätigte die dazu passende grüne Hervorhebung von `AUS`.
-- Erster Tipp auf `AUTOMATIK` wurde vom Touchcontroller erkannt, aber korrekt
-  nicht publiziert: `Loxone data : STALE`. Der nur beim MQTT-Verbindungsaufbau
-  empfangene retained Modus war bereits älter als 60 Sekunden.
-- Nach dem anschließenden Neustart wurde retained `mode = 3` wieder als frisch
-  eingelesen. `AUTOMATIK` publizierte korrekt Payload `1`, allerdings zweimal;
-  eine Status-Rückmeldung `mode = 1` wurde im Messfenster nicht empfangen.
-- Simulator mit der PlatformIO-Python-Umgebung bis zur CLI-Hilfe gestartet;
-  Imports und Syntax sind damit gültig. Broker-Selbsttest nicht erneut
-  ausgeführt.
-- Direkter Vergleichstest erfolgreich an den Broker publiziert:
-  `pool/cmd/mode = 1`, `retain=false`. Ob LoxBerry ihn an Loxone weiterleitete,
-  wurde verneint.
-- Zweiter MQTT-Client hat denselben Publish direkt vom Broker empfangen:
-  Topic `pool/cmd/mode`, Payload `1`, Retain-Flag `false`.
-- `git diff --check` vor der finalen Übergabe ohne Fehler.
-- Native Tests nicht ausgeführt; dem Host fehlt weiterhin `gcc/g++`.
+- Firmware-Releasebuild erfolgreich: RAM 31,3 %, Flash 19,0 %.
+- Firmware auf `COM3` geladen; alle Flash-Hashes verifiziert.
+- Retained Status `3` wurde als `Off` erkannt; Benutzer bestätigte `AUS` grün.
+- Retained Status `1` wurde als `Auto` erkannt; seriell zunächst `CURRENT`, nach
+  60 Sekunden ohne Wiederholung erwartungsgemäß `STALE`.
+- Modusbefehl `1` wurde vom Panel korrekt nicht-retained publiziert.
+- Direkte Werte `1`, `2` und wieder `1` erreichten den virtuellen Loxone-
+  Eingang; ein wiederholtes `2` wurde mit `Disable Cache` erneut weitergeleitet.
+- Broker-Subscriber bestätigte Topic, Payload und Retain-Flag der Tests.
+- Hardware-End-to-End-Test aller Modusbuttons erfolgreich: `2`, `3`, `1`
+  jeweils einmal publiziert, jeweils sofort über retained Status bestätigt und
+  korrekt als Manual, Off, Auto angezeigt; Datenstatus blieb `CURRENT`.
+- Erster 75-Sekunden-Monitorlauf sah nur retained `mode = 1`, wurde aber nach
+  rund 45 Sekunden wegen fehlendem Testclient-Keepalive getrennt.
+- Wiederholter 75-Sekunden-Monitorlauf mit aktivem Keepalive blieb stabil und
+  sah ebenfalls ausschließlich den retained Startwert `1`; keine zyklische
+  Live-Meldung kam an. Der neue Loxone-Wiederholzweig sendet noch nicht.
+- Auf Benutzerwunsch wurde derselbe stabile 75-Sekunden-Test erneut ausgeführt;
+  Ergebnis unverändert: nur retained `mode = 1` bei 0,1 Sekunden, danach keine
+  Live-Meldung.
+- Screenshot der Loxone-Konfiguration geprüft: bestehender analoger virtueller
+  Ausgangsbefehl mit `retain pool/status/mode <v>`, `Erste Wiederholung = 30 s`,
+  `Abstand Wiederholung = 30 s`, Digitalausgang deaktiviert. Diese eingebaute
+  Wiederholung ersetzt den zuvor vorgeschlagenen separaten Taktgeber.
+- Wahrscheinlich wurde die Wiederholkette nach dem Speichern noch nicht
+  gestartet, weil der analoge Eingang ohne erneute Wertänderung auf `1` blieb.
+- Mit Benutzerzustimmung wurde der Modus einmal `2 → 1` gewechselt. Danach war
+  die eingebaute Wiederholung aktiv: Broker-Messung über 75 Sekunden sah den
+  retained Startwert bei 0,1 s sowie Live-Publishes `mode = 1` bei 5,4 s,
+  35,4 s und 65,4 s, jeweils exakt 30 Sekunden Abstand.
+- Der analoge `<v>`-Ausgang wiederholt automatisch alle drei Moduswerte; die
+  zuvor erwogenen getrennten Takt-/Moduszweige sind nicht erforderlich.
+- Hardware-Langzeittest über 82 Sekunden bestanden: Nach seriellem Neustart
+  empfing das Panel den retained Modus und drei weitere `mode = 1`-Meldungen;
+  `Loxone data` blieb über die 60-Sekunden-Grenze hinaus `CURRENT`.
+- Die bestätigte Loxone-Konfiguration wurde in `docs/loxone.md` ergänzt.
+- `pool/status/targetTemp = 28.0` ist retained angebunden und wurde über
+  75 Sekunden bestätigt: retained Startwert sowie Live-Wiederholungen nach
+  jeweils 30 Sekunden.
+- Zwei Hardwaretests der Plus-Taste erzeugten Touchdaten innerhalb des Buttons,
+  aber kein LVGL-Klickereignis. Die Koordinaten wanderten beim Abheben bis an
+  den unteren Buttonrand; deshalb wurden Plus/Minus auf `LV_EVENT_PRESSED`
+  umgestellt.
+- Firmware mit reduziert parallelem Build erfolgreich gebaut und auf `COM3`
+  geflasht; Hashes verifiziert. Der erste Buildversuch überschritt das
+  Zeitlimit und hinterließ kurz verwaiste Prozesse, die anschließend beendet
+  beziehungsweise bereits ausgelaufen waren.
+- Hardwaretest mit neuem Handler erfolgreich: Plus änderte den Sollwert von
+  `28.0` auf `28.5`, Loxone meldete retained `28.5` zurück und das Display
+  zeigte den bestätigten Wert. Benutzer meldete danach ein blasseres Display
+  und weiterhin nicht angenommene Eingaben. Ein Wake-Touch half nicht.
+- Codeprüfung: `ScreenPowerPolicy` läuft mit deaktiviertem Dimm-Zwischenzustand;
+  die blassere Darstellung stammt daher wahrscheinlich von LVGLs Disabled-
+  Zustand. Eine zustandsänderungsbasierte GUI-Diagnoseausgabe für die drei
+  Controls und den Sollwert-Commandstatus wurde ergänzt, gebaut und geflasht.
+- Diagnose bestätigte zunächst den korrekten Plus-Ablauf `28.5 → 29.0`:
+  target enabled, kurz Pending/disabled, Statusbestätigung, danach Confirmed
+  und wieder enabled.
+- Beim späteren Minusversuch zeigte das Log jedoch
+  `controls mode=disabled target=disabled`, obwohl Zieltemperaturmeldungen
+  ankamen und der globale Datenstatus `CURRENT` war. Es kam keine zyklische
+  Modus-Livemeldung mehr; der retained Modus war älter als 60 Sekunden und
+  sperrte deshalb korrekt alle modusabhängigen Controls. Die blasse Darstellung
+  ist LVGL Disabled, kein Backlight-/Touchfehler.
+- Wahrscheinlicher Auslöser: Der Download der neuen TargetTemp-Loxone-
+  Konfiguration stoppte die eingebaute Wiederholkette des analogen Modus-
+  Ausgangs. Da der Eingang auf `1` blieb, startete sie nicht neu.
+- Benutzer bewertet eine robuste zyklische Loxone-Triggerlogik als zu
+  aufwändig und fragt nach einer Firmware-Alternative.
+- Firmware auf retained/MQTT-Politik umgestellt: bekannte Werte bleiben bei
+  MQTT-Verbindung bedienbar, individuelle 60-Sekunden-Altersgrenzen sind nur
+  noch Diagnose, MQTT-Offline/unbekannte Werte sperren weiterhin, Command-
+  Bestätigung/Timeout bleiben bestehen. Dokumentation und Tests angepasst.
+- Firmware gebaut, geflasht und 78 Sekunden getestet: Controls blieben über
+  die alte Stale-Grenze hinaus enabled.
+- Der aktuell empfangene Sollwert war `20.1`. Stumpfes ±0,5 ergab ungültige
+  Rasterwerte `20.6`/`19.6` und wurde deshalb abgelehnt. Plus/Minus runden nun
+  richtungsabhängig auf den nächsten gültigen Halbgrad (`20.5`/`20.0`).
+- Raster-Firmware erfolgreich gebaut und geflasht. Hardwaretest bestanden:
+  Beim bestätigten Zwischenwert `28.2` erzeugte ein Plus-Tipp genau einen
+  Command `28.5`; Loxone bestätigte `28.5`, Pending wurde aufgehoben und das
+  Control wieder enabled.
+- `pool/status/targetTemp` schwankte während des Tests ohne Panel-Touch zwischen
+  `29.0`, `28.9`, `28.8`, `28.7`, `28.2` und nach Bestätigung noch `28.0`.
+  Klären, ob der Benutzer parallel in Loxone änderte oder der Statusausgang
+  nicht am stabilen tatsächlich aktiven Sollwert hängt.
+- Native Tests nicht ausgeführt; dem Host fehlt `gcc/g++`.
 
 ## Nächster konkreter Schritt
 
-In Loxone `pool/status/mode` spätestens alle 30 Sekunden retained erneut
-publizieren, damit der Displaywert nicht nach 60 Sekunden stale wird. Danach
-visuell `AUTOMATIK` hervorheben lassen und die drei Displaybuttons samt
-Statusbestätigung end-to-end testen.
+Klären, warum `pool/status/targetTemp` während des Tests selbstständig schwankte.
+Falls der Benutzer nicht parallel änderte, in Loxone die Quelle des virtuellen
+Ausgangs auf den stabilen tatsächlich übernommenen Sollwert korrigieren. Danach
+Plus und Minus jeweils einmal bestätigen; anschließend Filterpumpenstatus und
+-bedienung anbinden.

@@ -393,7 +393,27 @@ void test_target_temperature_range_and_step()
     TEST_ASSERT_FALSE(PanelControlPolicy::isValidTargetTemperature(26.2f));
 }
 
-void test_target_temperature_requires_current_automatic_mode()
+void test_target_temperature_adjustment_snaps_to_valid_step()
+{
+    TEST_ASSERT_FLOAT_WITHIN(
+        0.001f,
+        20.5f,
+        PanelControlPolicy::adjustedTargetTemperature(20.1f, 1));
+    TEST_ASSERT_FLOAT_WITHIN(
+        0.001f,
+        20.0f,
+        PanelControlPolicy::adjustedTargetTemperature(20.1f, -1));
+    TEST_ASSERT_FLOAT_WITHIN(
+        0.001f,
+        29.0f,
+        PanelControlPolicy::adjustedTargetTemperature(28.5f, 1));
+    TEST_ASSERT_FLOAT_WITHIN(
+        0.001f,
+        28.0f,
+        PanelControlPolicy::adjustedTargetTemperature(28.5f, -1));
+}
+
+void test_target_temperature_requires_known_automatic_mode()
 {
     PoolState state;
     state.hasMode = true;
@@ -406,18 +426,23 @@ void test_target_temperature_requires_current_automatic_mode()
     TEST_ASSERT_TRUE(
         PanelControlPolicy::canAdjustTargetTemperature(state, 1000));
 
+    state.hasTargetTemperature = false;
+    TEST_ASSERT_FALSE(
+        PanelControlPolicy::canAdjustTargetTemperature(state, 1000));
+    state.hasTargetTemperature = true;
+
     state.mode = PoolMode::Manual;
     TEST_ASSERT_FALSE(
         PanelControlPolicy::canAdjustTargetTemperature(state, 1000));
 
     state.mode = PoolMode::Auto;
-    TEST_ASSERT_FALSE(
+    TEST_ASSERT_TRUE(
         PanelControlPolicy::canAdjustTargetTemperature(
             state,
             1001 + PoolState::STATUS_STALE_AFTER_MS));
 }
 
-void test_other_status_does_not_refresh_operating_mode()
+void test_confirmed_values_remain_usable_after_age_limit()
 {
     PoolState state;
     state.hasMode = true;
@@ -435,11 +460,11 @@ void test_other_status_does_not_refresh_operating_mode()
 
     TEST_ASSERT_TRUE(state.isStatusFresh(now));
     TEST_ASSERT_FALSE(state.isModeFresh(now));
-    TEST_ASSERT_FALSE(
+    TEST_ASSERT_TRUE(
         PanelControlPolicy::canControlFilterPump(state, true, now));
 }
 
-void test_mode_selection_requires_connection_and_current_mode()
+void test_mode_selection_requires_connection_and_known_mode()
 {
     PoolState state;
     state.hasMode = true;
@@ -448,11 +473,15 @@ void test_mode_selection_requires_connection_and_current_mode()
 
     TEST_ASSERT_TRUE(PanelControlPolicy::canSelectMode(state, true, 1000));
     TEST_ASSERT_FALSE(PanelControlPolicy::canSelectMode(state, false, 1000));
-    TEST_ASSERT_FALSE(
+    TEST_ASSERT_TRUE(
         PanelControlPolicy::canSelectMode(
             state,
             true,
             1001 + PoolState::STATUS_STALE_AFTER_MS));
+
+    state.hasMode = false;
+    TEST_ASSERT_FALSE(
+        PanelControlPolicy::canSelectMode(state, true, 1000));
 }
 
 void test_view_model_disables_controls_without_connection()
@@ -599,9 +628,10 @@ int main(int argc, char** argv)
     RUN_TEST(test_command_timeout_handles_millis_wraparound);
     RUN_TEST(test_command_result_returns_to_idle_after_visible_period);
     RUN_TEST(test_target_temperature_range_and_step);
-    RUN_TEST(test_target_temperature_requires_current_automatic_mode);
-    RUN_TEST(test_other_status_does_not_refresh_operating_mode);
-    RUN_TEST(test_mode_selection_requires_connection_and_current_mode);
+    RUN_TEST(test_target_temperature_adjustment_snaps_to_valid_step);
+    RUN_TEST(test_target_temperature_requires_known_automatic_mode);
+    RUN_TEST(test_confirmed_values_remain_usable_after_age_limit);
+    RUN_TEST(test_mode_selection_requires_connection_and_known_mode);
     RUN_TEST(test_view_model_disables_controls_without_connection);
     RUN_TEST(test_view_model_enables_controls_for_confirmed_mode);
     RUN_TEST(test_view_model_exposes_command_progress);

@@ -21,6 +21,11 @@ private:
     MqttManager* _mqtt = nullptr;
     bool _initialized = false;
     bool _controlsEnabled = false;
+    bool _controlStateLogged = false;
+    bool _lastModeControlEnabled = false;
+    bool _lastTargetControlEnabled = false;
+    bool _lastFilterControlEnabled = false;
+    CommandProgress _lastTargetCommand = CommandProgress::Idle;
 
     lv_obj_t* _waterValue = nullptr;
     lv_obj_t* _heatingBadge = nullptr;

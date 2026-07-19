@@ -30,24 +30,37 @@ namespace PanelControlPolicy
         return fabsf(steps - roundf(steps)) < 0.001f;
     }
 
+    inline float adjustedTargetTemperature(float currentValue, int direction)
+    {
+        const float steps =
+            (currentValue - MIN_TARGET_TEMPERATURE) / TARGET_TEMPERATURE_STEP;
+        const float targetStep = direction < 0
+            ? ceilf(steps - 0.001f) - 1.0f
+            : floorf(steps + 0.001f) + 1.0f;
+        return MIN_TARGET_TEMPERATURE +
+               targetStep * TARGET_TEMPERATURE_STEP;
+    }
+
     inline bool canAdjustTargetTemperature(const PoolState& state, uint32_t now)
     {
-        return state.mode == PoolMode::Auto &&
-               state.isModeFresh(now) &&
-               state.isTargetTemperatureFresh(now);
+        (void)now;
+        return state.hasMode &&
+               state.mode == PoolMode::Auto &&
+               state.hasTargetTemperature;
     }
 
     inline bool canSelectMode(const PoolState& state, bool mqttConnected, uint32_t now)
     {
-        return mqttConnected && state.isModeFresh(now);
+        (void)now;
+        return mqttConnected && state.hasMode;
     }
 
     inline bool canControlFilterPump(const PoolState& state, bool mqttConnected, uint32_t now)
     {
+        (void)now;
         return mqttConnected &&
                state.isManualModeConfirmed() &&
-               state.isModeFresh(now) &&
-               state.isFilterPumpFresh(now);
+               state.hasFilterPump;
     }
 
     inline bool canAdjustTargetTemperature(

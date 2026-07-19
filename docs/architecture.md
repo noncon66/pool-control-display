@@ -16,9 +16,9 @@ The display is deliberately a thin MQTT client:
 - When MQTT is offline, command controls must be disabled.
 
 `PoolState` is a cache of the latest confirmed Loxone status. Its `has...`
-fields distinguish confirmed values from initial storage defaults. Values that
-influence a control permission have their own update timestamp. A current
-temperature message therefore cannot make an old operating mode appear current.
+fields distinguish confirmed values from initial storage defaults. Update
+timestamps remain available for diagnostics, but retained values remain usable
+while MQTT is connected and do not require cyclic Loxone publishes.
 
 `PoolStatusUpdater` maps validated MQTT status topics to `PoolState` and
 confirms matching pending commands. It has no Arduino, Wi-Fi, or broker
@@ -29,9 +29,9 @@ timestamps unchanged.
 `PanelCommandState` tracks whether user requests are pending, confirmed, or
 timed out without changing `PoolState`.
 
-`PanelViewModel` combines connection state, data freshness, control policy, and
-command progress into simple flags for the future GUI. LVGL widgets should use
-this model instead of implementing their own permission rules.
+`PanelViewModel` combines connection state, known-value state, control policy,
+and command progress into simple flags for the GUI. LVGL widgets use this model
+instead of implementing their own permission rules.
 
 `ScreenPowerPolicy` tracks the screen power state independently from pool
 status and commands. It supports optional dimming and decides whether a touch

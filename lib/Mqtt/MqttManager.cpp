@@ -95,7 +95,7 @@ bool MqttManager::sendMode(uint8_t mode)
 
     if (!canSendModeCommand())
     {
-        Serial.println("[MQTT] mode command rejected: connection unavailable or mode data stale");
+        Serial.println("[MQTT] mode command rejected: connection unavailable or mode unknown");
         return false;
     }
 
@@ -146,7 +146,7 @@ bool MqttManager::sendFilterPump(bool on)
     // verbindliche Prüfung innerhalb der Loxone-Steuerung.
     if (!canSendFilterPumpCommand())
     {
-        Serial.println("[MQTT] filter pump command rejected: Manual mode not confirmed or data stale");
+        Serial.println("[MQTT] filter pump command rejected: connection, Manual mode or filter status unavailable");
         return false;
     }
 

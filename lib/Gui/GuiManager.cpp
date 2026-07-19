@@ -139,8 +139,11 @@ void GuiManager::createScreen()
     lv_obj_align(_plusButton, LV_ALIGN_RIGHT_MID, 0, 10);
     lv_obj_set_user_data(_minusButton, reinterpret_cast<void*>(-1));
     lv_obj_set_user_data(_plusButton, reinterpret_cast<void*>(1));
-    lv_obj_add_event_cb(_minusButton, onTargetClicked, LV_EVENT_CLICKED, this);
-    lv_obj_add_event_cb(_plusButton, onTargetClicked, LV_EVENT_CLICKED, this);
+    // Die Touchkoordinaten streuen am unteren Displayrand beim Abheben etwas.
+    // PRESSED löst genau einmal beim sicheren Erstkontakt aus, während CLICKED
+    // durch die anschließende Bewegung über den Buttonrand verworfen würde.
+    lv_obj_add_event_cb(_minusButton, onTargetClicked, LV_EVENT_PRESSED, this);
+    lv_obj_add_event_cb(_plusButton, onTargetClicked, LV_EVENT_PRESSED, this);
     lv_obj_center(createLabel(_minusButton, "-", lv_color_hex(COLOR_GREEN)));
     lv_obj_center(createLabel(_plusButton, "+", lv_color_hex(COLOR_GREEN)));
 
@@ -184,7 +187,7 @@ void GuiManager::applyView(const PanelViewModel& view)
 {
     // During touch bring-up the buttons remain visually interactive while all
     // callbacks are still blocked by _controlsEnabled. Once productive control
-    // is enabled, the normal offline/stale/unknown-data policy applies again.
+    // is enabled, the normal offline/unknown-data policy applies again.
     const bool touchTestMode = !_controlsEnabled;
     for (lv_obj_t* button : _modeButtons)
     {
@@ -193,6 +196,25 @@ void GuiManager::applyView(const PanelViewModel& view)
     setEnabled(_minusButton, touchTestMode || view.targetTemperatureControlEnabled);
     setEnabled(_plusButton, touchTestMode || view.targetTemperatureControlEnabled);
     setEnabled(_filterButton, touchTestMode || view.filterPumpControlEnabled);
+
+    if (!_controlStateLogged ||
+        _lastModeControlEnabled != view.modeControlEnabled ||
+        _lastTargetControlEnabled != view.targetTemperatureControlEnabled ||
+        _lastFilterControlEnabled != view.filterPumpControlEnabled ||
+        _lastTargetCommand != view.targetTemperatureCommand)
+    {
+        Serial.printf(
+            "[GUI] controls mode=%s target=%s filter=%s targetCommand=%u\n",
+            view.modeControlEnabled ? "enabled" : "disabled",
+            view.targetTemperatureControlEnabled ? "enabled" : "disabled",
+            view.filterPumpControlEnabled ? "enabled" : "disabled",
+            static_cast<unsigned int>(view.targetTemperatureCommand));
+        _controlStateLogged = true;
+        _lastModeControlEnabled = view.modeControlEnabled;
+        _lastTargetControlEnabled = view.targetTemperatureControlEnabled;
+        _lastFilterControlEnabled = view.filterPumpControlEnabled;
+        _lastTargetCommand = view.targetTemperatureCommand;
+    }
 
     const bool commandTimedOut =
         view.modeCommand == CommandProgress::TimedOut ||
@@ -208,11 +230,10 @@ void GuiManager::applyView(const PanelViewModel& view)
         view.filterPumpCommand == CommandProgress::Confirmed;
 
     if (view.showOfflineWarning) lv_label_set_text(_footer, "Keine MQTT-Verbindung");
-    else if (view.showStaleDataWarning) lv_label_set_text(_footer, "Loxone-Daten veraltet");
     else if (commandTimedOut) lv_label_set_text(_footer, "Keine Bestätigung von Loxone");
     else if (commandPending) lv_label_set_text(_footer, "Wird übernommen ...");
     else if (commandConfirmed) lv_label_set_text(_footer, "Übernommen");
-    else lv_label_set_text(_footer, "Mit Loxone verbunden");
+    else lv_label_set_text(_footer, "Mit MQTT verbunden");
 }
 
 void GuiManager::onModeClicked(lv_event_t* event)
@@ -244,8 +265,9 @@ void GuiManager::onTargetClicked(lv_event_t* event)
         return;
     }
     if (!self->_state->hasTargetTemperature) return;
-    const float requested = self->_state->targetTemperature +
-        static_cast<float>(direction) * PanelControlPolicy::TARGET_TEMPERATURE_STEP;
+    const float requested = PanelControlPolicy::adjustedTargetTemperature(
+        self->_state->targetTemperature,
+        static_cast<int>(direction));
     self->_mqtt->sendTargetTemperature(requested);
 }
 

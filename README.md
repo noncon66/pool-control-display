@@ -65,7 +65,7 @@ documented in [`docs/loxone.md`](docs/loxone.md).
 Hardware-independent application core in development:
 
 - Wi-Fi and MQTT reconnect handling
-- validated Loxone status model with unknown/stale data handling
+- validated retained Loxone status model with unknown/offline handling
 - command validation and confirmation tracking
 - serial diagnostic dashboard
 - native state-model tests prepared

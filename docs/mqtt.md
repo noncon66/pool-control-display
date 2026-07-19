@@ -54,7 +54,7 @@ are true:
 
 - MQTT is connected.
 - Loxone has confirmed operating mode `2` (Manual).
-- The received Loxone data is not stale.
+- A confirmed filter-pump status has been received.
 
 This panel-side check is only user-interface guidance. Loxone remains
 authoritative and must independently reject `pool/cmd/filterPump` whenever its
@@ -66,9 +66,13 @@ The display offers target-temperature changes only when:
 
 - MQTT is connected.
 - Loxone has confirmed operating mode `1` (Automatic).
-- The received Loxone data is current.
+- A confirmed target temperature has been received.
 - The requested value is between `20.0 °C` and `32.0 °C`.
 - The requested value uses a `0.5 °C` step.
+
+If Loxone confirms an intermediate value that is not on this grid, Plus and
+Minus snap to the next valid half-degree value instead of propagating the
+offset.
 
 These are panel interaction rules. Loxone must independently validate every
 target-temperature command before applying it.
@@ -100,8 +104,10 @@ numeric messages are ignored and never overwrite the last confirmed value.
 ## Data validity
 
 - Values remain unknown until their first valid status message arrives.
-- A malformed payload is ignored and does not refresh the data timestamp.
-- Data is marked stale after 60 seconds without any valid status message.
-- Stale data may still be displayed for context, but command controls should
-  be disabled or clearly marked until communication is current again.
+- A malformed payload is ignored and never replaces a confirmed value.
+- Retained values represent the last state confirmed by Loxone and remain
+  usable while MQTT is connected; cyclic status publishes are not required.
+- MQTT disconnect disables command controls immediately.
+- If Loxone is unavailable while the broker remains online, an unconfirmed
+  command times out after five seconds without changing the displayed state.
 - Safety decisions and operating limits always remain in Loxone.

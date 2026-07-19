@@ -45,9 +45,9 @@ struct PoolState
     // Zeitstempel zeigt, ob Loxone grundsätzlich noch Daten sendet.
     uint32_t lastStatusUpdateAt = 0;
 
-    // Für Werte, von denen eine Bedienfreigabe abhängt, wird zusätzlich ein
-    // eigener Zeitstempel geführt. So kann beispielsweise eine aktuelle
-    // Temperaturmeldung keinen veralteten Manual-Modus künstlich aktuell halten.
+    // Eigene Zeitstempel bleiben für Diagnose und eine mögliche spätere
+    // Heartbeat-Strategie erhalten. Die aktuelle Bedienpolitik verwendet
+    // retained Werte bei bestehender MQTT-Verbindung ohne Altersgrenze.
     uint32_t lastTargetTemperatureUpdateAt = 0;
     uint32_t lastFilterPumpUpdateAt = 0;
     uint32_t lastModeUpdateAt = 0;

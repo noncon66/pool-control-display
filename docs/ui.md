@@ -38,7 +38,7 @@ Heating is never shown as an operating mode.
 
 ## Interaction rules
 
-- Operating modes are enabled only with current Loxone data and MQTT.
+- Operating modes are enabled only with a known retained mode and MQTT.
 - Target temperature is adjustable only in Automatic mode.
 - Target range is 20.0 to 32.0 degrees Celsius in 0.5-degree steps.
 - Filter pump control is enabled only in Manual mode.
@@ -48,8 +48,8 @@ Heating is never shown as an operating mode.
 - A timeout shows `Keine Bestätigung von Loxone`.
 - The affected control remains disabled while its command is pending.
 - Unknown values display `--` instead of defaults.
-- Stale values remain visible but are marked as outdated and controls are
-  disabled.
+- Retained values remain usable while MQTT is connected. A command without a
+  matching Loxone status response times out after five seconds.
 - Offline state disables all command controls.
 
 ## Screen power behavior
