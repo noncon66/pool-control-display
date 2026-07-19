@@ -152,12 +152,47 @@ Statuswerte regelmäßig retained publiziert werden, damit das Panel nicht nach
   `29.0`, `28.9`, `28.8`, `28.7`, `28.2` und nach Bestätigung noch `28.0`.
   Klären, ob der Benutzer parallel in Loxone änderte oder der Statusausgang
   nicht am stabilen tatsächlich aktiven Sollwert hängt.
+- Benutzer hat den digitalen virtuellen Ausgang für den tatsächlichen
+  Filterpumpenstatus eingerichtet. Read-only Brokerprüfung erhielt jedoch noch
+  keine retained Meldung auf `pool/status/filterPump`; der Ausgang stand beim
+  Speichern vermutlich unverändert und löste weder EIN noch AUS aus.
+- Benutzer stellte fest, dass die zugehörige Loxone-Filterpumpenlogik noch
+  überarbeitet werden muss. Filtertest ist deshalb bewusst pausiert; keine
+  reale Pumpe wurde durch Codex geschaltet.
+- Loxone-Screenshot zur Filteranforderung analysiert: `pool_cmd_filterPump`
+  liegt am `On`-Eingang des Schalter-Bausteins. Dieser Eingang setzt nur EIN;
+  ein MQTT-Wert `0` schaltet den Ausgang nicht wieder AUS. Im gezeigten Zustand
+  stehen Schalter- und UND-Ausgang bereits auf `Ein`, obwohl der virtuelle
+  Eingang aktuell `Aus` anzeigt. Für eine deterministische 0/1-Abbildung sind
+  getrennte EIN-/AUS-Flanken oder eine direkte Zustandslogik erforderlich.
+- Benutzer hat `pool_cmd_filterPump` in Loxone über eine Flankenerkennung in
+  einen Impuls umgewandelt. Noch zu prüfen ist, ob positive und negative Flanke
+  getrennt auf `On` beziehungsweise `Off` des Schalter-Bausteins geführt sind.
+- Nach Benutzerfreigabe wurde der erste Live-Testbefehl
+  `pool/cmd/filterPump = 1` nicht-retained erfolgreich an den LoxBerry-Broker
+  publiziert. Der Benutzer bestätigte daraufhin den EIN-Zustand des
+  Schalterausgangs; die positive Flanke funktioniert.
+- Anschließend wurde `pool/cmd/filterPump = 0` nicht-retained erfolgreich an
+  den Broker publiziert. Der Benutzer bestätigte den AUS-Zustand; damit sind
+  positive und negative Flanke der Loxone-Schalterlogik erfolgreich geprüft.
+- Read-only Brokerprüfung nach dem Ausschalten erfolgreich:
+  `pool/status/filterPump = 0` wurde retained empfangen. Der Statusausgang ist
+  damit an den Broker angebunden und bildet zumindest den AUS-Zustand korrekt
+  ab.
+- Benutzer bestätigte, dass die Filterkachel am Panel den retained
+  Filterpumpenstatus `0` korrekt als AUS anzeigt. Der komplette AUS-Rückweg von
+  Loxone über MQTT bis zum Display ist damit bestätigt.
+- Panel-End-to-End-Test für EIN erfolgreich: Benutzer tippte die Filterkachel
+  im manuellen Modus; Loxone schaltete ein und die bestätigte Anzeige am Panel
+  funktionierte.
+- Panel-End-to-End-Test für AUS ebenfalls erfolgreich: Ein zweiter Tipp
+  schaltete über MQTT und Loxone wieder aus, die Rückmeldung wurde am Display
+  korrekt angezeigt. Die Filterpumpensteuerung ist damit in beiden Richtungen
+  vollständig geprüft; Abschlusszustand ist AUS.
 - Native Tests nicht ausgeführt; dem Host fehlt `gcc/g++`.
 
 ## Nächster konkreter Schritt
 
-Klären, warum `pool/status/targetTemp` während des Tests selbstständig schwankte.
-Falls der Benutzer nicht parallel änderte, in Loxone die Quelle des virtuellen
-Ausgangs auf den stabilen tatsächlich übernommenen Sollwert korrigieren. Danach
-Plus und Minus jeweils einmal bestätigen; anschließend Filterpumpenstatus und
--bedienung anbinden.
+Als Nächstes den tatsächlichen Heizpumpenstatus über
+`pool/status/heatingPump` retained anbinden und dessen Anzeige am Panel prüfen;
+danach `heatingAllowed` und `isHeating` vervollständigen.
