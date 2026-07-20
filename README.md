@@ -29,7 +29,7 @@ to `true` and configure a strong `OTA_PASSWORD` in the private
 
 ## Planned features
 
-- LVGL-based touch UI (widget structure implemented; hardware activation pending)
+- LVGL-based touch UI (integrated; redesigned layout awaiting hardware verification)
 - Wi-Fi + MQTT reconnect handling
 - OTA updates (implemented, disabled by default)
 - Pool dashboard
@@ -62,7 +62,7 @@ documented in [`docs/loxone.md`](docs/loxone.md).
 
 ## Project status
 
-Hardware-independent application core in development:
+Integrated application firmware:
 
 - Wi-Fi and MQTT reconnect handling
 - validated retained Loxone status model with unknown/offline handling
@@ -70,9 +70,10 @@ Hardware-independent application core in development:
 - serial diagnostic dashboard
 - native state-model tests prepared
 
-Display and touch support remain disabled until the delivered Waveshare panel
-has been checked against the vendor demo and its ST7701 / GT911 driver setup
-has been ported and tested on real hardware.
+ST7701 display output, GT911 touch input, LVGL, screen-off behavior and safe
+touch wake-up are integrated in the normal firmware. The current dark,
+Loxone-inspired dashboard revision builds successfully and awaits visual and
+touch verification on the real panel.
 
 Automatic firmware builds, native tests, and simulator checks run through
 GitHub Actions. See [`docs/ci.md`](docs/ci.md).

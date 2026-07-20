@@ -44,12 +44,13 @@ accidental first tap cannot trigger a pool command.
 disabled by default and starts only after Wi-Fi is connected and a non-empty
 password is configured.
 
-## Hardware separation
+## Hardware integration
 
-The target panel is the Waveshare ESP32-S3-Touch-LCD-4B. Display and touch
-libraries are still disabled in `platformio.ini` until the delivered board has
-been checked against the vendor demo and the ST7701 display, GT911 touch, and
-backlight setup have been verified on real hardware.
+The target panel is the Waveshare ESP32-S3-Touch-LCD-4B. Its ST7701 display,
+GT911 touch controller, backlight, LVGL output/input drivers and safe wake-touch
+handling are integrated in the normal `esp32-s3-panel` firmware target. The
+isolated display and touch environments remain available for hardware
+diagnostics.
 
-Wi-Fi, MQTT, screen-power policy, and state handling can be developed and
-tested independently.
+Pool state, MQTT command policy and screen-power policy remain separated from
+the hardware drivers and can still be developed and tested independently.

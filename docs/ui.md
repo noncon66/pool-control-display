@@ -19,8 +19,9 @@ copying an existing screen or using Loxone branding.
 - Large touch targets with clear separation
 - Flat appearance without gradients or decorative effects
 
-Exact colors and font sizes will be finalized after the Waveshare
-ESP32-S3-Touch-LCD-4B has been visually tested.
+The dark Loxone-inspired direction, stronger green accents and enlarged touch
+controls have been approved in an interactive 480 x 480 draft. Final pixel-level
+adjustments remain subject to verification on the Waveshare panel.
 
 ## Main screen
 
@@ -96,7 +97,10 @@ The main-screen widget tree is implemented in `lib/Gui/GuiManager.cpp` using
 LVGL 8.4. It includes status cards, mode buttons, target-temperature controls,
 connection warnings, MQTT command callbacks, and command-progress feedback.
 
-The GUI is compiled but not started yet. ST7701 panel timing, GT911 raw touch,
-backlight, black/off behavior, and touch wake-up are integrated and verified on
-the delivered panel. `GuiManager::begin()` remains disabled until
-`DisplayManager` registers the LVGL display flush and touch input drivers.
+`DisplayManager` registers the LVGL display flush and GT911 input drivers, and
+`AppController` starts `GuiManager` in the normal firmware. The approved
+dashboard revision uses a compact horizontal water-temperature row, clearly
+separated status and control surfaces, a taller operating-mode section, large
+target-temperature buttons, and stronger but restrained green accents. It
+builds successfully; visual layout and real touch behavior of this revision
+still need verification on the physical panel.
