@@ -10,8 +10,8 @@ separate Status `isHeating` wurde aus dem Projekt entfernt.
 
 ## Aktueller Git-Stand
 
-- Branch `main`, aktueller Commit `b5e9159` (`MQTT: Remove redundant isHeating
-  status`).
+- Branch `main`, aktueller Commit `c7ddf71` (`Docs: Record integration status
+  and GUI design direction`).
 - Vor dieser Handoff-Aktualisierung war der Arbeitsbaum sauber.
 - Die aktuelle Firmware ohne `isHeating` ist auf `COM3` geflasht.
 - Kein Simulator- oder Hilfsprozess läuft.
@@ -45,12 +45,15 @@ separate Status `isHeating` wurde aus dem Projekt entfernt.
   nicht ändern: Plus-/Minus-Schaltflächen sind als blaue Flächen sichtbar,
   ihre Zeichen aber kaum erkennbar; mehrere Beschriftungen sind für den realen
   Betrachtungsabstand zu klein.
-- Benutzer lieferte zwei Screenshots der aktuellen Loxone-App als spätere
-  visuelle Referenz. Relevante Merkmale: große Primärwerte und Beschriftungen,
-  sehr deutliche Plus-/Minus-Glyphen, ruhige dunkle Karten, großzügige Abstände
-  und klar hervorgehobene aktive Zustände. Die Display-GUI soll diese
-  Prinzipien nutzen, aber ihre kompakte Dashboard-Struktur behalten und weder
-  Loxone-Branding noch App-Screens direkt kopieren.
+- Die aktuellen Gerätefotos `WhatsApp Image 2026-07-19 at 23.51.47.jpeg` und
+  `WhatsApp Image 2026-07-19 at 23.40.55.jpeg` bestätigen die GUI-Probleme:
+  Plus/Minus sind in den blauen Tasten praktisch unsichtbar, die Filterpumpen-
+  Kachel ist nicht als Bedienelement erkennbar und die vielen gleichartigen
+  grauen Karten/Rahmen wirken deutlich technischer als die Loxone-App.
+- Weitere Screenshots der aktuellen Loxone-App sind angekündigt und sollen vor
+  der nächsten GUI-Umsetzung als visuelle Referenz ausgewertet werden. Zu
+  übernehmen sind Designprinzipien, nicht Loxone-Branding oder eine direkte
+  Kopie der App-Screens.
 - Verbindliche GUI-Vorgabe des Benutzers: Das aktuelle Display-Layout und die
   Anordnung der Bereiche bleiben erhalten. Die Filterpumpen-Kachel muss bei der
   späteren visuellen Überarbeitung eindeutig als bedienbarer Button erkennbar
@@ -82,6 +85,38 @@ separate Status `isHeating` wurde aus dem Projekt entfernt.
   gemeinsame GUI-Abstimmung fortgesetzt wird.
 - Anschließend Timeout, MQTT-offline und Reconnect abschließend testen.
 - Native Tests erneut ausführen, sobald `gcc/g++` auf dem Host verfügbar ist.
+- Veraltete Statusaussagen in `README.md`, `docs/architecture.md` und
+  `docs/ui.md` korrigieren: Display, GT911, LVGL und `GuiManager::begin()` sind
+  inzwischen im Standardziel integriert und auf Hardware aktiv, werden dort
+  aber teilweise noch als deaktiviert oder ausstehend beschrieben.
+- Der frühere Entwurf `pool-control-gui-balanced-draft.html` ist im aktuellen
+  Thread nicht verfügbar. Auf Basis der erneut gelieferten Gerätefotos und
+  drei Loxone-App-Screens wurde deshalb der neue interaktive Entwurf
+  `pool-control-loxone-draft.html` im aktuellen Visualisierungsverzeichnis
+  erstellt. Der Benutzer hat den final korrigierten Stand als gut bestätigt;
+  er ist damit die freigegebene visuelle Referenz für die LVGL-Übernahme.
+- Der aktuelle Entwurf wurde auf Benutzerwunsch konsequent dunkler abgestimmt:
+  die Wassertemperatur ist flacher, der Betriebsmodus deutlich höher und
+  Loxone-inspiriertes Grün erscheint stärker an aktiver Auswahl,
+  Verbindungsindikatoren, Statuswerten, Icons und Plus/Minus. Die ruhigen
+  dunklen Aktionsflächen und das bestehende Layout bleiben erhalten.
+- Nach Benutzerhinweis wurde der Dark Mode anschließend technisch erzwungen,
+  sodass Hintergrund, Karten und Buttons nicht mehr das helle Farbschema der
+  umgebenden Codex-Oberfläche übernehmen können.
+- Der zunächst orange dargestellte Akzent wurde anschließend auf das
+  Loxone-inspirierte Grün der Visualisierungspalette umgestellt.
+- Für eine bessere Erkennbarkeit der Schaltflächen wurden deren dunkle Flächen
+  und Konturen gegenüber reinen Statuskarten kontrastreicher gemacht. Die drei
+  Modustasten besitzen zusätzlich eindeutige Symbole; Filterpumpe und
+  Sollwerttasten behalten ihre bestehende Power-/Pfeil- beziehungsweise
+  Plus-/Minus-Kennzeichnung.
+- Plus und Minus wurden auf ausdrücklichen Benutzerwunsch nochmals deutlich
+  größer und kräftiger gesetzt; die beiden Sollwerttasten erhielten zusätzlich
+  mehr Höhe. Der vergrößerte Betriebsmodusbereich bleibt weitgehend erhalten.
+- Ein erster Versuch, den Wert in der sehr flachen Wassertemperatur-Karte nach
+  oben zu setzen, schnitt `26,8 °C` unten ab. Nach Benutzer-Screenshot wurde die
+  Karte deshalb auf eine stabile horizontale Zeile aus Beschriftung, Wert und
+  Thermometer-Icon umgestellt; die kompakte Kartenhöhe bleibt erhalten.
 
 ## Wichtige technische Entscheidungen
 
@@ -286,11 +321,22 @@ separate Status `isHeating` wurde aus dem Projekt entfernt.
 - Variante mit kompakter Wassertemperatur und deutlich mehr Platz für den
   Betriebsmodus erfolgreich gerendert; weiterhin keine Firmwareänderung.
 - Native Tests nicht ausgeführt; dem Host fehlt `gcc/g++`.
+- Aktualisierungssichtung am 20.07.2026: Git-Historie seit `0bfa87a`,
+  Build-Konfiguration, AppController, Display-/Touch-/LVGL-Integration,
+  GUI- und Bedienpolicy, MQTT-Vertrag, Projektdokumentation und registrierte
+  Tests geprüft. `git diff --check` war fehlerfrei. Keine Builds, Native Tests
+  oder Hardwaretests ausgeführt; `gcc/g++` sind weiterhin nicht verfügbar.
+- Drei Loxone-App-Referenzen und zwei aktuelle Gerätefotos visuell geprüft.
+  Der neue interaktive 480×480-Entwurf übernimmt die Loxone-Prinzipien aus
+  dunklen ruhigen Karten, klarer Wertehierarchie, separaten Aktionsflächen und
+  sparsamen Akzenten. Modus, Sollwert und Filterpumpenstatus reagieren lokal;
+  Firmware, MQTT und reale Hardware wurden dabei nicht verändert oder getestet.
 
 ## Nächster konkreter Schritt
 
-Am nächsten Tag die GUI-Abstimmung auf Basis von
-`pool-control-gui-balanced-draft.html` fortsetzen; der Entwurf ist noch nicht in
-die Firmware zu übernehmen. Danach Stabilität und korrekte Quelle von
-`pool/status/targetTemp`, Timeout, MQTT-offline und Reconnect prüfen;
-Heizpumpenstatus `0` bei der nächsten regulären Abschaltung kontrollieren.
+Den freigegebenen Stand aus `pool-control-loxone-draft.html` in
+`lib/Gui/GuiManager.cpp` übertragen, ohne MQTT-, Command- oder Bedienpolicy zu
+ändern; anschließend bauen, auf `COM3` flashen und visuell sowie per Touch
+prüfen. Danach Stabilität und korrekte Quelle von `pool/status/targetTemp`,
+Timeout, MQTT-offline und Reconnect prüfen; Heizpumpenstatus `0` bei der
+nächsten regulären Abschaltung kontrollieren.
