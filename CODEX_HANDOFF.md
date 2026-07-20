@@ -3,21 +3,26 @@
 ## Aktuelles Ziel
 
 Das ESP32-S3-Pooldisplay als dünnen MQTT-Client für die über LoxBerry
-angebundene Loxone-Poolsteuerung fertigstellen. Die freigegebene dunkle,
-Loxone-inspirierte GUI ist in LVGL umgesetzt und lokal gebaut. Als Nächstes
-steht die Prüfung auf dem realen 480×480-Display an.
+angebundene Loxone-Poolsteuerung fertigstellen. Die dunkle, Loxone-inspirierte
+GUI ist in LVGL umgesetzt, auf `COM3` geflasht und nach gezielten
+Pixelkorrekturen vom Benutzer visuell freigegeben. Als Nächstes stehen die
+abschließenden Bedien- und Fehlerzustandstests an.
 
 ## Aktueller Git-Stand
 
-- Branch `main`, Basis-Commit `addaef8` (`Docs: Record approved GUI design
-  direction`), synchron mit `origin/main`.
-- Lokale, noch nicht committete Änderungen: `GuiManager.cpp/.h`, `README.md`,
-  `docs/architecture.md`, `docs/ui.md` und dieser Handoff.
-- Für den lokalen Build wurde eine ignorierte `include/PoolConfig.h` mit
-  Platzhalterwerten angelegt; sie enthält keine produktiven Zugangsdaten und
-  wird nicht committet.
-- Das Display ist aktuell nicht verfügbar. Die neue GUI wurde deshalb weder
-  geflasht noch visuell oder per Touch auf Hardware geprüft.
+- Branch `main`, aktueller Commit `267272a` (`GUI: Implement approved dark
+  Loxone-inspired layout`), synchron mit dem lokalen Stand von `origin/main`.
+- Bei Sitzungsbeginn war der Arbeitsbaum sauber; die neue GUI,
+  Dokumentationskorrekturen und der vorherige Handoff waren vollständig
+  committet.
+- Aktuell noch nicht committet: größere 16-px-Titelschrift in `lv_conf.h` und
+  `GuiManager.cpp`, höher gesetzte Statuswerte, passend verkleinerte
+  `AUTOMATIK`-Beschriftung sowie dieser aktualisierte Handoff.
+- Eine ignorierte private `include/PoolConfig.h` ist auf diesem Rechner
+  vorhanden und bleibt außerhalb von Git.
+- Die neue GUI-Firmware wurde auf diesem Rechner erfolgreich auf `COM3`
+  geflasht. Die sichtbare Darstellung ist bestätigt; die Bedien- und
+  Fehlerzustände sind noch systematisch zu prüfen.
 
 ## Erledigte Änderungen
 
@@ -35,6 +40,11 @@ steht die Prüfung auf dem realen 480×480-Display an.
 - Plus/Minus-Tasten höher gestaltet und mit großen, kräftigen Zeichen versehen.
 - Statuskarten für Heizpumpe und Heizfreigabe sowie Kopf- und Fußzeile an die
   neue visuelle Hierarchie angepasst.
+- Hardwarekorrekturen nach dem ersten Foto: `AUTOMATIK` verwendet innerhalb
+  seines schmaleren Felds 16 statt 20 px, die drei oberen Statuswerte wurden
+  fünf Pixel nach oben verschoben und die Titel `Wassertemperatur`,
+  `Filterpumpe`, `Heizpumpe`, `Heizfreigabe` sowie `Solltemperatur` von 14 auf
+  16 px vergrößert. Der Benutzer bestätigte den korrigierten Stand als final.
 - MQTT-Callbacks, Commandwerte, Bestätigungslogik und Bedienpolicy unverändert
   gelassen. Plus/Minus verwenden weiterhin `LV_EVENT_PRESSED`, Modus und
   Filterpumpe weiterhin `LV_EVENT_CLICKED`.
@@ -45,9 +55,9 @@ steht die Prüfung auf dem realen 480×480-Display an.
 
 ## Offene Arbeit
 
-- Sobald das Display wieder verfügbar ist: Firmware flashen und Layout,
-  Schriftgrößen, Kontrast, Touch-Ziele sowie alle aktiven/disabled Zustände auf
-  dem realen Panel prüfen; danach nötige Pixelkorrekturen vornehmen.
+- Filterpumpe, alle drei Modi sowie Plus/Minus mit der finalen Geometrie noch
+  einmal kurz auf Touch und Statusbestätigung prüfen.
+- Pending/disabled und MQTT-offline mit der finalen GUI visuell prüfen.
 - Heizpumpenstatus `0` bei der nächsten regulären Abschaltung kontrollieren.
 - Ursache früherer Schwankungen von `pool/status/targetTemp` prüfen und
   sicherstellen, dass Loxone den stabilen tatsächlich aktiven Sollwert sendet.
@@ -92,14 +102,24 @@ steht die Prüfung auf dem realen 480×480-Display an.
   lokalen Build die ignorierte Platzhalterdatei angelegt.
 - `git diff --check` nach Code-, Dokumentations- und Handoff-Änderungen
   fehlerfrei.
-- Kein Flash, kein Hardware-, Touch- oder visueller Paneltest ausgeführt, weil
-  das Display nicht verfügbar ist.
+- Auf dem anderen Entwicklungsrechner war mangels Display nur der Build möglich;
+  Flash und Hardwareabnahme wurden dort nicht ausgeführt.
+- Auf diesem Rechner Hauptziel `esp32-s3-panel` vollständig neu gebaut und auf
+  `COM3` geladen: RAM 31,3 % (102548/327680 Bytes), Flash 19,4 %
+  (1270430/6553600 Bytes). Bootloader, Partitionen und Firmware wurden
+  geschrieben, alle Flash-Hashes verifiziert und das Board per RTS neu
+  gestartet. Eine Narrowing-Warnung stammt aus der externen Arduino-GFX-
+  Bibliothek und war nicht build- oder upload-blockierend.
+- Korrigierte GUI erneut vollständig gebaut und auf `COM3` geladen: RAM 31,3 %
+  (102556/327680 Bytes), Flash 19,6 % (1286378/6553600 Bytes); alle
+  Flash-Hashes verifiziert. Benutzer bestätigte anschließend, dass
+  `AUTOMATIK`, obere Statuswerte und vergrößerte Titel gut aussehen und der
+  visuelle Stand unverändert bleiben soll.
 - Native Tests nicht ausgeführt; dem Host fehlt weiterhin `gcc/g++`.
 
 ## Nächster konkreter Schritt
 
-Wenn das Display wieder verfügbar ist, das aktuelle Hauptziel flashen und die
-neue GUI auf dem Panel systematisch prüfen: zuerst Geometrie und Lesbarkeit,
-dann Filterpumpe, alle drei Modi, Plus/Minus, Pending/disabled und
-MQTT-offline. Anschließend nur die auf Hardware erkennbaren Detailabweichungen
-nachjustieren.
+Mit der visuell freigegebenen GUI Filterpumpe, alle drei Modi und Plus/Minus
+noch einmal kurz end-to-end bedienen. Danach Pending/disabled, MQTT-offline und
+Reconnect abschließend prüfen; keine weiteren Layoutänderungen ohne neue
+Benutzeranforderung.

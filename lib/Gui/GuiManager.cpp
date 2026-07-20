@@ -121,6 +121,7 @@ void GuiManager::createScreen()
         temperatureCard,
         "Wassertemperatur",
         lv_color_hex(COLOR_MUTED));
+    lv_obj_set_style_text_font(waterTitle, &lv_font_montserrat_16, 0);
     lv_obj_align(waterTitle, LV_ALIGN_LEFT_MID, 0, 0);
     _waterValue = createLabel(temperatureCard, "--,- C", lv_color_hex(COLOR_TEXT));
     lv_obj_set_style_text_font(_waterValue, &lv_font_montserrat_28, 0);
@@ -172,10 +173,11 @@ void GuiManager::createScreen()
         lv_obj_set_pos(icon, 0, -1);
 
         lv_obj_t* statusTitle = createLabel(card, statusNames[i], lv_color_hex(COLOR_MUTED));
-        lv_obj_set_pos(statusTitle, 0, 27);
+        lv_obj_set_style_text_font(statusTitle, &lv_font_montserrat_16, 0);
+        lv_obj_set_pos(statusTitle, 0, 24);
         *statusValues[i] = createLabel(card, "--", lv_color_hex(COLOR_GREEN));
         lv_obj_set_style_text_font(*statusValues[i], &lv_font_montserrat_20, 0);
-        lv_obj_set_pos(*statusValues[i], 0, 49);
+        lv_obj_set_pos(*statusValues[i], 0, 44);
     }
 
     lv_obj_t* modeTitle = createLabel(screen, "BETRIEBSMODUS", lv_color_hex(COLOR_GREEN));
@@ -203,7 +205,10 @@ void GuiManager::createScreen()
                 static_cast<intptr_t>(static_cast<uint8_t>(MODE_VALUES[i]))));
         lv_obj_add_event_cb(_modeButtons[i], onModeClicked, LV_EVENT_CLICKED, this);
         lv_obj_t* label = createLabel(_modeButtons[i], modeNames[i], lv_color_hex(COLOR_TEXT));
-        lv_obj_set_style_text_font(label, &lv_font_montserrat_20, 0);
+        lv_obj_set_style_text_font(
+            label,
+            i == 1 ? &lv_font_montserrat_16 : &lv_font_montserrat_20,
+            0);
         lv_obj_center(label);
     }
 
@@ -213,6 +218,7 @@ void GuiManager::createScreen()
     lv_obj_set_pos(targetCard, 12, 334);
     lv_obj_set_style_pad_all(targetCard, 9, 0);
     lv_obj_t* targetTitle = createLabel(targetCard, "Solltemperatur", lv_color_hex(COLOR_MUTED));
+    lv_obj_set_style_text_font(targetTitle, &lv_font_montserrat_16, 0);
     lv_obj_align(targetTitle, LV_ALIGN_TOP_MID, 0, 1);
     _targetValue = createLabel(targetCard, "--,- C", lv_color_hex(COLOR_TEXT));
     lv_obj_set_style_text_font(_targetValue, &lv_font_montserrat_28, 0);
