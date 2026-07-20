@@ -10,14 +10,11 @@ abschließenden Bedien- und Fehlerzustandstests an.
 
 ## Aktueller Git-Stand
 
-- Branch `main`, aktueller Commit `267272a` (`GUI: Implement approved dark
-  Loxone-inspired layout`), synchron mit dem lokalen Stand von `origin/main`.
-- Bei Sitzungsbeginn war der Arbeitsbaum sauber; die neue GUI,
-  Dokumentationskorrekturen und der vorherige Handoff waren vollständig
+- Branch `main`, aktueller Commit `7680eb4` (`GUI: Refine typography and status
+  alignment`), synchron mit dem lokalen Stand von `origin/main`.
+- Vor dieser Handoff-Aktualisierung war der Arbeitsbaum sauber; GUI,
+  Pixelkorrekturen, Dokumentation und vorheriger Handoff sind vollständig
   committet.
-- Aktuell noch nicht committet: größere 16-px-Titelschrift in `lv_conf.h` und
-  `GuiManager.cpp`, höher gesetzte Statuswerte, passend verkleinerte
-  `AUTOMATIK`-Beschriftung sowie dieser aktualisierte Handoff.
 - Eine ignorierte private `include/PoolConfig.h` ist auf diesem Rechner
   vorhanden und bleibt außerhalb von Git.
 - Die neue GUI-Firmware wurde auf diesem Rechner erfolgreich auf `COM3`
