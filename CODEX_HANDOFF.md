@@ -10,8 +10,8 @@ abschließenden Bedien- und Fehlerzustandstests an.
 
 ## Aktueller Git-Stand
 
-- Branch `main`, aktueller Commit `7680eb4` (`GUI: Refine typography and status
-  alignment`), synchron mit dem lokalen Stand von `origin/main`.
+- Branch `main`, aktueller Commit `ce98df8` (`Docs: Update final GUI verification
+  handoff`), synchron mit dem lokalen Stand von `origin/main`.
 - Vor dieser Handoff-Aktualisierung war der Arbeitsbaum sauber; GUI,
   Pixelkorrekturen, Dokumentation und vorheriger Handoff sind vollständig
   committet.
@@ -52,6 +52,10 @@ abschließenden Bedien- und Fehlerzustandstests an.
 
 ## Offene Arbeit
 
+- Für die erwogene Akku-/Qi-Erweiterung die reale Stromaufnahme bei aktivem
+  Display, ausgeschaltetem Display und WLAN/MQTT-Reconnect mit einem
+  USB-Leistungsmesser erfassen. Danach Qi-Empfängerleistung und Akkukapazität
+  festlegen.
 - Filterpumpe, alle drei Modi sowie Plus/Minus mit der finalen Geometrie noch
   einmal kurz auf Touch und Statusbestätigung prüfen.
 - Pending/disabled und MQTT-offline mit der finalen GUI visuell prüfen.
@@ -60,9 +64,17 @@ abschließenden Bedien- und Fehlerzustandstests an.
   sicherstellen, dass Loxone den stabilen tatsächlich aktiven Sollwert sendet.
 - Timeout, MQTT-offline und Reconnect abschließend testen.
 - Native Tests erneut ausführen, sobald `gcc/g++` auf dem Host verfügbar ist.
+- Veraltete Hinweise in `README.md` und `docs/ui.md`, wonach die visuelle
+  Hardwareprüfung noch aussteht, an die bereits erfolgte Freigabe angleichen.
 
 ## Wichtige technische Entscheidungen
 
+- Vorläufiges Akku-/Qi-Konzept: geschützter 1S-LiPo ausschließlich an den
+  vorhandenen 3,7-V-PH2.0-Anschluss; ein Qi-Empfänger speist als geregelte
+  5-V-Quelle den USB-/`5V_IN`-Pfad. Keine zweite LiPo-Ladeschaltung und niemals
+  5 V direkt an den Akkuanschluss. Magnetische Ausrichtung als mechanische
+  MagSafe-/Qi2-kompatible Halterung behandeln, nicht als Apple-MagSafe-
+  Zertifizierung des Eigenbaus.
 - Loxone bleibt alleiniger Controller. Das Panel übernimmt Commands erst nach
   einer bestätigenden Statusmeldung.
 - Modusvertrag: `1 = Automatik`, `2 = Manuell`, `3 = Aus`; `0` wird abgelehnt.
@@ -113,10 +125,19 @@ abschließenden Bedien- und Fehlerzustandstests an.
   `AUTOMATIK`, obere Statuswerte und vergrößerte Titel gut aussehen und der
   visuelle Stand unverändert bleiben soll.
 - Native Tests nicht ausgeführt; dem Host fehlt weiterhin `gcc/g++`.
+- In dieser reinen Statussitzung Arbeitsbaum, Branch, letzte Commits,
+  Projektstruktur, `README.md`, `platformio.ini` und relevante offene Hinweise
+  geprüft. `git diff --check` war fehlerfrei; Build, Flash und native Tests
+  wurden in dieser Sitzung nicht erneut ausgeführt.
+- In dieser Beratungssitzung Waveshare-Wiki und Schaltplan sowie das
+  AXP2101-Datenblatt geprüft. Bestätigt sind der 1S-PH2.0-Akkuanschluss mit
+  Lade-/Entladeverwaltung, der `5V_IN`-Pfad und ein zulässiger AXP2101-VBUS-
+  Bereich von 3,9 bis 5,5 V. Keine Hardwaremessung, kein Build und kein Flash
+  ausgeführt.
 
 ## Nächster konkreter Schritt
 
-Mit der visuell freigegebenen GUI Filterpumpe, alle drei Modi und Plus/Minus
-noch einmal kurz end-to-end bedienen. Danach Pending/disabled, MQTT-offline und
-Reconnect abschließend prüfen; keine weiteren Layoutänderungen ohne neue
-Benutzeranforderung.
+Vor einer Akku-/Qi-Auslegung die reale Stromaufnahme des Panels in den drei
+relevanten Betriebszuständen messen. Parallel bleibt der nächste Firmware-
+Schritt, mit der visuell freigegebenen GUI Filterpumpe, Modi, Plus/Minus,
+Pending/disabled, MQTT-offline und Reconnect abschließend zu prüfen.
